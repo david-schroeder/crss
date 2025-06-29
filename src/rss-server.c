@@ -5,11 +5,12 @@ const char* argp_program_version;
 const char* argp_program_bug_address = "<post@schroederdavid.de>";
 static char doc[] = "CRSS Implementation by David Schröder\nhttps://git.tu-berlin.de/schroeder_dav1d/";
 static struct argp_option options[] = {
-    {"debug",   'd', "LEVEL",   0,              "Debug level for execution"     },
-    {"port",    'p', "PORT",    0,              "Port to host server on"        },
-    {"address", 'a', "ADDRESS", 0,              "Address to host server on"     },
-    {"name",    'n', "NAME",    OPTION_HIDDEN,  "The name to execute by"        },
-    {"nogui",   'g', 0,         0,              "Do not open GUI"               },
+    {"debug",    'd',  "LEVEL",    0,              "Debug level for execution"     },
+    {"port",     'p',  "PORT",     0,              "Port to host server on"        },
+    {"address",  'a',  "ADDRESS",  0,              "Address to host server on"     },
+    {"name",     'n',  "NAME",     OPTION_HIDDEN,  "The name to execute by"        },
+    {"longname", 'l', "LONGNAME", OPTION_HIDDEN,  "Software name - long version"  },
+    {"nogui",    'g',  0,          0,              "Do not open GUI"               },
     {0}
 };
 
@@ -62,6 +63,7 @@ void parse_args(int argc, char* argv[]) {
     // Initialize
     struct arguments arguments;
     arguments.name = SOFTWARE_NAME;
+    arguments.longname = LONG_SOFTWARE_NAME;
     arguments.debug = log_info;
     arguments.address = SERVER_IP;
     arguments.port = SERVER_PORT;
@@ -70,6 +72,7 @@ void parse_args(int argc, char* argv[]) {
 
     // Update settings
     SOFTWARE_NAME = arguments.name;
+    LONG_SOFTWARE_NAME = arguments.longname;
     LOG_LEVEL = arguments.debug;
     SERVER_IP = arguments.address;
     SERVER_PORT = arguments.port;
@@ -82,28 +85,26 @@ static volatile int keepRunning = 1;
 
 void intHandler(int dummy) {
     printf("\r");
-    console_log(log_debug, "main.intHandler", "%d\n", dummy);
+    console_log(log_debug, "main.intHandler", "%d", dummy);
     keepRunning = 0;
+    if (WITH_GUI) {
+        terminateGUI();
+    }
 }
 
 
 // Running variables
-GLFWwindow* window;
 
 int main(int argc, char* argv[]) {
+    const char *fnpath = "main";
 
-    const char* fnpath = "main"; // Function path
-
-    signal(SIGINT, intHandler);
-
-    // Obtain SOFTWARE_NAME, LOG_LEVEL, SERVER_IP, SERVER_PORT and VERSION_STRING
+    // Obtain SOFTWARE_NAME, LONG_SOFTWARE_NAME, LOG_LEVEL, SERVER_IP, SERVER_PORT and VERSION_STRING
     parse_args(argc, argv); // Also initialise settings
 
-    LVERBOSE("Vocalizing...");
-    LDEBUG("Squashing the bugs!");
-    LINFO("Ready to start!");
-    LWARN("Look up, your crown is falling!");
-    LFATAL("Oopsie :[");
+    char *start_time = get_time_string();
+    LINFO("Launching %s at %s!", LONG_SOFTWARE_NAME, start_time);
+
+    signal(SIGINT, intHandler);
 
     LINFO("=======================================================================");
     LINFO("Running Server version %s on host %s:%d", VERSION_STRING, SERVER_IP, SERVER_PORT);
@@ -111,33 +112,18 @@ int main(int argc, char* argv[]) {
     LDEBUG("Configuration: IP %s, PORT %d, NAME %s, DBG_LVL %d, GUI %d", SERVER_IP, SERVER_PORT, SOFTWARE_NAME, \
                 LOG_LEVEL, WITH_GUI);
 
+    int return_code = 0;
     if (WITH_GUI) {
-        window = initGUI(fnpath);
-
-        if (window == NULL) {
-            free(VERSION_STRING);
-            return 0;
-        }
+        // TODO: threading
+        return_code = runGUI((char*)fnpath, 0, NULL);
     }
 
-    while (keepRunning) {
-        if (WITH_GUI) {
-            if (glfwWindowShouldClose(window)) {
-                // Close window
-                keepRunning = 0;
-                break;
-            }
-            window_tick(fnpath, window);
-        }
+    switch (return_code) {
+        case 0: LINFO("Terminating normally!"); break;
+        default: LFATAL("Terminating with errors!");
     }
-
-    if (WITH_GUI) {
-        window_terminate(fnpath);
-    }
-
-    LINFO("Terminating normally!");
 
     // Cleanup and exit
     free(VERSION_STRING);
-    return 0;
+    return return_code;
 }

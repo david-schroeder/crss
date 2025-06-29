@@ -5,14 +5,15 @@
 #include "utils.h"
 #include "settings.h"
 
-#include "gui/window.h"
+#include "gui/gui.h"
 
 
 struct arguments {
     int debug;
     int port;
-    char* address;
-    char* name;
+    char *address;
+    char *name;
+    char *longname;
     int gui;
 };
 

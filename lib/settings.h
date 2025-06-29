@@ -3,15 +3,16 @@
 
 #include "version.h"
 
-extern char* SOFTWARE_NAME;
-extern char* VERSION_STRING;
+extern char *SOFTWARE_NAME;
+extern char *LONG_SOFTWARE_NAME;
+extern char *VERSION_STRING;
 
 extern int MAX_LOG_FMT_LEN;
 extern int MAX_FN_PATH_LEN;
-extern const char* FNP_DELIM;
+extern const char *FNP_DELIM;
 extern int LOG_LEVEL;
 
-extern char* SERVER_IP;
+extern char *SERVER_IP;
 extern int SERVER_PORT;
 extern int WITH_GUI;
 

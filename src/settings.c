@@ -1,19 +1,21 @@
 #include "settings.h"
 
-char* SOFTWARE_NAME;
-char* VERSION_STRING;
+char *SOFTWARE_NAME;
+char *LONG_SOFTWARE_NAME;
+char *VERSION_STRING;
 
 int MAX_LOG_FMT_LEN;
 int MAX_FN_PATH_LEN;
 const char* FNP_DELIM;
 int LOG_LEVEL;
 
-char* SERVER_IP;
+char *SERVER_IP;
 int SERVER_PORT;
 int WITH_GUI;
 
 void reset_all_settings() {
     SOFTWARE_NAME = "CRSS";
+    LONG_SOFTWARE_NAME = "C Redstone Speedup Server";
     VERSION_STRING = get_version_string();
 
     MAX_LOG_FMT_LEN = 256;

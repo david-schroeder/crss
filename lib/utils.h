@@ -7,14 +7,13 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <string.h>
 #include <time.h>
 #include <argp.h>
 #include <signal.h>
 #include <unistd.h>
-
-#include <GLFW/glfw3.h>
 
 #define LVERBOSE(...) console_log(log_verbose, fnpath, __VA_ARGS__)
 #define LDEBUG(...) console_log(log_debug, fnpath, __VA_ARGS__)
@@ -108,5 +107,7 @@ Returns a child function path like main.gui.draw
 @returns char* containing full fn_path e.g. main.gui.draw
 */
 char* get_fn_path(const char* parent_path, const char* fn_name);
+
+#define FUNCPATH(funcname) fnpath = get_fn_path(fnpath, funcname)
 
 #endif // UTILS_H
