@@ -1,25 +1,30 @@
-CFLAGS		:= -Wall -g -O0 -D DEBUG -Ilib
+CFLAGS		:= -Wall -g -O0 -D DEBUG -Ilib -lpthread `pkg-config gtk4 libzmq --cflags --libs`
 CC			:= clang
 OBJFILES    := build/rss-server.o \
 				build/version.o \
 				build/utils.o \
 				build/settings.o \
+				build/internals.o \
 				build/gui/gui.o \
+				build/gui/resources.o \
 				build/core/redsynth/graph.o
 
 VERSION     := v1.0-snapshot-0 # must be accordingly updated
 NAME        := rss-server-$(VERSION)
 
 run: $(OBJFILES) | build
-	@$(CC) $(CFLAGS) `pkg-config gtk4 --cflags` -o build/$(NAME) $^ `pkg-config --libs gtk4`
+	@$(CC) $(CFLAGS) -o build/$(NAME) $^
 	@./build/$(NAME) -d verbose
 
 build:
 	mkdir -p $@
 
+resources:
+	glib-compile-resources src/gui/crss.gresource.xml --generate-source --generate --sourcedir=src/gui --target=src/gui/resources.c
+
 build/%.o: src/%.c | build
 	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) `pkg-config gtk4 --cflags` -c -o $@ $^ `pkg-config --libs gtk4`
+	@$(CC) $(CFLAGS) -c -o $@ $^
 
 clean:
 	rm -rf build

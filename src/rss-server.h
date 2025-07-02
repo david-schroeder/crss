@@ -4,6 +4,7 @@
 #include "version.h"
 #include "utils.h"
 #include "settings.h"
+#include "internals.h"
 
 #include "gui/gui.h"
 

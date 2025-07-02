@@ -1,0 +1,129 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Created with Cambalache 0.96.1 -->
+<interface>
+  <!-- interface-name crss.ui -->
+  <requires lib="gtk" version="4.14"/>
+  <template class="CrssAppWindow" parent="GtkApplicationWindow">
+    <property name="default-height">500</property>
+    <property name="default-width">500</property>
+    <property name="title">C Redstone Speedup Server</property>
+    <child>
+      <object class="GtkPaned">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkPaned">
+            <property name="height-request">250</property>
+            <property name="shrink-end-child">False</property>
+            <property name="vexpand">True</property>
+            <child>
+              <object class="GtkGrid">
+                <property name="tooltip-text">Circuit Hierarchy</property>
+                <property name="width-request">250</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="css-classes">viewport-label</property>
+                    <property name="hexpand">True</property>
+                    <property name="label">Circuit Hierarchy</property>
+                    <property name="lines">1</property>
+                    <property name="margin-bottom">5</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-top">5</property>
+                    <property name="single-line-mode">True</property>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">0</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeView">
+                    <property name="tooltip-text">Circuit Hierarchy</property>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">1</property>
+                    </layout>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkGLArea" id="graph_area">
+                <property name="has-depth-buffer">True</property>
+                <property name="height-request">0</property>
+                <property name="tooltip-text">Graph Render Area</property>
+                <property name="width-request">500</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkViewport">
+            <property name="height-request">100</property>
+            <child>
+              <object class="GtkGrid">
+                <child>
+                  <object class="GtkLabel">
+                    <property name="hexpand">True</property>
+                    <property name="label">Command Console</property>
+                    <property name="margin-bottom">5</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-start">10</property>
+                    <property name="margin-top">5</property>
+                    <property name="xalign">0.0</property>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">0</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow">
+                    <property name="hexpand">True</property>
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="tooltip-text">Command Console</property>
+                    <property name="vscrollbar-policy">always</property>
+                    <child>
+                      <object class="GtkTextView" id="console_text_view">
+                        <property name="cursor-visible">False</property>
+                        <property name="editable">False</property>
+                        <property name="hexpand">True</property>
+                        <property name="input-hints">lowercase|word-completion</property>
+                        <property name="input-purpose">terminal</property>
+                        <property name="margin-end">10</property>
+                        <property name="margin-start">10</property>
+                        <property name="monospace">True</property>
+                        <property name="tooltip-text">Command Console</property>
+                        <property name="vexpand">True</property>
+                      </object>
+                    </child>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">1</property>
+                    </layout>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="console_command_entry">
+                    <property name="accessible-role">terminal</property>
+                    <property name="has-frame">False</property>
+                    <property name="input-purpose">terminal</property>
+                    <property name="margin-bottom">5</property>
+                    <property name="margin-end">10</property>
+                    <property name="margin-start">10</property>
+                    <property name="placeholder-text">Enter console command here...</property>
+                    <signal name="activate" handler="issue_console_command_callback"/>
+                    <layout>
+                      <property name="column">0</property>
+                      <property name="row">2</property>
+                    </layout>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

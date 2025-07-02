@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
+<!-- Created with Cambalache 0.96.1 -->
+<cambalache-project version="0.96.0" target_tk="gtk-4.0">
+  <ui template-class="CrssAppWindow" filename="crss.ui" sha256="7cc5957e7959f0301aac9bd0f7cc0100c58afa80d2e4d3496a05ddd32cc8f974"/>
+</cambalache-project>

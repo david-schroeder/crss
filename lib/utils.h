@@ -14,6 +14,7 @@
 #include <argp.h>
 #include <signal.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define LVERBOSE(...) console_log(log_verbose, fnpath, __VA_ARGS__)
 #define LDEBUG(...) console_log(log_debug, fnpath, __VA_ARGS__)
@@ -93,7 +94,9 @@ Gets time string in the format HH:MM:SS
 char* get_time_string();
 
 /*
-Optionally logs a formatted message, depending on <level>
+# CRSS Logger
+
+Optionally logs a formatted message, depending on <level>.
 @param level - the minimum log level for the message to be shown
 @param format - the format string to print
 @return null

@@ -92,8 +92,17 @@ void intHandler(int dummy) {
     }
 }
 
+int return_code;
 
-// Running variables
+void *gui_wrapper(void *fnpath) {
+    const char *init_fp = fnpath;
+    FUNCPATH("gui_bootstrap");
+    LVERBOSE("Dispatching to GUI subsystem...");
+    free(fnpath);
+    fnpath = (void *)init_fp;
+    return_code = runGUI((char*)fnpath, 0, NULL);
+    return NULL;
+}
 
 int main(int argc, char* argv[]) {
     const char *fnpath = "main";
@@ -107,16 +116,26 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, intHandler);
 
     LINFO("=======================================================================");
-    LINFO("Running Server version %s on host %s:%d", VERSION_STRING, SERVER_IP, SERVER_PORT);
+    LINFO("Software version %s on host %s:%d", VERSION_STRING, SERVER_IP, SERVER_PORT);
 
     LDEBUG("Configuration: IP %s, PORT %d, NAME %s, DBG_LVL %d, GUI %d", SERVER_IP, SERVER_PORT, SOFTWARE_NAME, \
                 LOG_LEVEL, WITH_GUI);
 
-    int return_code = 0;
-    if (WITH_GUI) {
-        // TODO: threading
-        return_code = runGUI((char*)fnpath, 0, NULL);
-    }
+    crss_initialize(fnpath);
+    
+    LINFO("Dispatching worker threads...");
+    LDEBUG("Launching GUI Thread!");
+
+    return_code = 0;
+
+    pthread_t gui_thread;
+    pthread_create(&gui_thread, NULL, gui_wrapper, (void *)fnpath);
+
+    LINFO("%s version %s successfully loaded and started!", SOFTWARE_NAME, VERSION_STRING);
+
+    LINFO("Press ENTER to terminate program.");
+    char in;
+    scanf("%c", &in);
 
     switch (return_code) {
         case 0: LINFO("Terminating normally!"); break;
