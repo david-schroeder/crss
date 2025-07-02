@@ -94,15 +94,32 @@ void intHandler(int dummy) {
 
 int return_code;
 
-void *gui_wrapper(void *fnpath) {
-    const char *init_fp = fnpath;
-    FUNCPATH("gui_bootstrap");
-    LVERBOSE("Dispatching to GUI subsystem...");
-    free(fnpath);
-    fnpath = (void *)init_fp;
-    return_code = runGUI((char*)fnpath, 0, NULL);
+// all for one fancy line of text...
+#define THREAD_WRAPPER(name, compound) \
+    const char *init_fp = (const char *)fp; \
+    const char *fnpath = name "_bootstrap"; \
+    LVERBOSE("Launching " name " subsystem..."); \
+    fnpath = init_fp; \
+    compound \
     return NULL;
-}
+
+#define DECLARE_THREAD_WRAPPER(name, compound) \
+    static void *name ## _wrapper(void *fp) { \
+        THREAD_WRAPPER(#name, compound); \
+    }
+
+#define LAUNCH_WRAPPED_THREAD(name) \
+    pthread_t name ## _thread; \
+    pthread_create(&name ## _thread, NULL, name ## _wrapper, (void *)fnpath)
+
+DECLARE_THREAD_WRAPPER(logger, {
+    // dispatch to logger thread here
+});
+
+DECLARE_THREAD_WRAPPER(gui, {
+    return_code = runGUI((char*)fnpath, 0, NULL);
+    LINFO("GUI exited with code %d", return_code);
+});
 
 int main(int argc, char* argv[]) {
     const char *fnpath = "main";
@@ -128,8 +145,9 @@ int main(int argc, char* argv[]) {
 
     return_code = 0;
 
-    pthread_t gui_thread;
-    pthread_create(&gui_thread, NULL, gui_wrapper, (void *)fnpath);
+    // logger thread available via `pthread_t logger_thread`;
+    LAUNCH_WRAPPED_THREAD(logger);
+    LAUNCH_WRAPPED_THREAD(gui);
 
     LINFO("%s version %s successfully loaded and started!", SOFTWARE_NAME, VERSION_STRING);
 
