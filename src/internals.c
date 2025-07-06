@@ -1,6 +1,6 @@
 #include "internals.h"
 
-static void *_crss_zmq_ctx;
+static void *_crss_zmq_ctx = NULL;
 
 void crss_initialize(const char *fnpath) {
     FUNCPATH("internals.init");

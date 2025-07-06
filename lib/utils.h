@@ -16,10 +16,39 @@
 #include <unistd.h>
 #include <pthread.h>
 
+/*
+Log verbose message.
+
+Assumes `fnpath` is defined and contains the current function identifier.
+*/
 #define LVERBOSE(...) console_log(log_verbose, fnpath, __VA_ARGS__)
+
+/*
+Log debug message.
+
+Assumes `fnpath` is defined and contains the current function identifier.
+*/
 #define LDEBUG(...) console_log(log_debug, fnpath, __VA_ARGS__)
+
+/*
+Log info message.
+
+Assumes `fnpath` is defined and contains the current function identifier.
+*/
 #define LINFO(...) console_log(log_info, fnpath, __VA_ARGS__)
+
+/*
+Log warning message.
+
+Assumes `fnpath` is defined and contains the current function identifier.
+*/
 #define LWARN(...) console_log(log_warn, fnpath, __VA_ARGS__)
+
+/*
+Log fatal message.
+
+Assumes `fnpath` is defined and contains the current function identifier.
+*/
 #define LFATAL(...) console_log(log_fatal, fnpath, __VA_ARGS__)
 
 enum log_level {
@@ -56,40 +85,35 @@ enum color_specifier {
 };
 
 /*
-Set the terminal color style to any style and color
-@param int style_specifier - the style to be used
-@param int color_specifier - the color to be used
-@returns null
+Set the terminal color and style
+@param style_specifier Style to be used
+@param color_specifier Color to be used
 */
 void set_style(enum style_specifier style_specifier, enum color_specifier color_specifier);
 
 /*
-Resets the terminal color style
-@param none
-@returns null
+Resets terminal color style
 */
 void reset_style();
 
 /*
-Set a string's color style to any style and color
-@param char* dest - the string to be modified
-@param int style_specifier - the style to be used
-@param int color_specifier - the color to be used
-@returns null
+Set a string's color and style
+@param dest String to be modified
+@param style_specifier Style to be used
+@param color_specifier Color to be used
 */
 void s_set_style(char* dest, enum style_specifier style_specifier, enum color_specifier color_specifier);
 
 /*
 Resets a string's color style
-@param char* dest - the string to be reset
-@returns null
+@param dest The string to be reset
 */
 void s_reset_style(char* dest);
 
 /*
-Gets time string in the format HH:MM:SS
-@params none
-@returns char* containing a result string; should be freed
+Gets current time as string in the format HH:MM:SS
+
+@return String containing current time; must be freed
 */
 char* get_time_string();
 
@@ -99,15 +123,15 @@ char* get_time_string();
 Optionally logs a formatted message, depending on <level>.
 @param level - the minimum log level for the message to be shown
 @param format - the format string to print
-@return null
 */
 void console_log(enum log_level level, const char* func_location, const char* format, ...);
 
 /*
-Returns a child function path like main.gui.draw
-@param char* parent_path - the parent path e.g. main.gui
-@param char* fn_name - the child path e.g. draw
-@returns char* containing full fn_path e.g. main.gui.draw
+Get Callee function identifier.
+
+@param parent_path Parent function identifier
+@param fn_name Callee identifier
+@return Full callee identifier string. Must be freed.
 */
 char* get_fn_path(const char* parent_path, const char* fn_name);
 

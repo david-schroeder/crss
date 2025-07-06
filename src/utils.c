@@ -29,6 +29,7 @@ char* get_time_string() {
 }
 
 // NOTE: think about what messages are sent to GUI console / ZMQ / multiple channels / etc...
+// TODO: rewrite
 void console_log(enum log_level level, const char* func_location, const char* format, ...) {
 
     if (level < LOG_LEVEL) { return; }

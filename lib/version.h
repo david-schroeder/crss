@@ -14,8 +14,8 @@
 
 /*
 Generates a version string such as "v1.2.3" using the version infos
-#defined above.
-@return a char* to a string which should be freed with free(), NULL on calloc fail
+defined by preprocessor macros in `version.h`.
+@return Version string which must be freed or NULL on calloc fail
 */
 char* get_version_string();
 

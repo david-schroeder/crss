@@ -18,10 +18,36 @@ struct arguments {
     int gui;
 };
 
+/*
+Parses program arguments and sets global setting variables.
+
+NOTE: This should be marked as deprecated and replaced with handling
+to integrate more closely with GTK's argument system.
+
+@param argc Argument count
+@param argv String argument list
+*/
 void parse_args(int argc, char* argv[]);
 
+/*
+Ctrl+C Interrupt handler
+
+@param dummy System interrupt code
+*/
 void intHandler(int dummy);
 
+/*
+Global program entry point.
+
+Initializes program and inproc sockets, launches subsystem threads,
+and runs command console in main thread until exited.
+
+The subsystems that are launched are:
+- GUI thread, if GUI is enabled or selected via command-line arguments
+- Command broker thread, which each subsystem can dispatch commands to
+- Network thread
+- Backend threads, such as main game thread and RedSynth thread
+*/
 int main(int argc, char* argv[]);
 
 #endif // RSS_SERVER_H
