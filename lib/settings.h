@@ -2,6 +2,7 @@
 #define SETTINGS_H
 
 #include <stdbool.h>
+#include <pthread.h>
 
 #include "version.h"
 
@@ -24,6 +25,9 @@ various connected network entities as well as the standard `stdout` and logfile
 targets. This system is used when `LOG_SIMPLE = false`.
 */
 extern bool LOG_SIMPLE;
+
+extern bool IN_TERMINAL_MODE;
+extern char *PROMPT_STRING;
 
 extern char *SERVER_IP;
 extern int SERVER_PORT;

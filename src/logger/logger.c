@@ -59,14 +59,15 @@ int run_logger(int n_connections) {
         zmq_poll(sink_items, 3, -1);
         if (sink_items[0].revents & ZMQ_POLLIN) {
             router_msg_t *log_msg = s_recv_msg_router(log_sink);
-            printf("\033[31m*\033[0m%s", log_msg->data);
+            printf("\r\033[31m*\033[0m%s", log_msg->data);
+            fflush(stdout);
             free_router_msg(log_msg);
         }
         if (sink_items[1].revents & ZMQ_POLLIN) {
             router_msg_t *cmd_msg = s_recv_msg_router(cmd_sink);
             char *cmd_data = cmd_msg->data;
             if (cmd_data[0] != '\0') {
-                DLINFO("Application Command issued by <%s>: %s", cmd_msg->addr_string, cmd_data);
+                DLVERBOSE("Application Command issued: %s", cmd_data);
                 s_send(publisher, cmd_data);
             }
             free_router_msg(cmd_msg);

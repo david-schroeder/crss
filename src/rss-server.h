@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "settings.h"
 #include "internals.h"
+#include "resources.h"
 
 #include "gui/gui.h"
 #include "logger/logger.h"

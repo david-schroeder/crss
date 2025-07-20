@@ -124,6 +124,8 @@ int main(int argc, char* argv[]) {
 
     LVERBOSE("Initializing!");
 
+    init_resources();
+
     // create ZMQ context
     crss_initialize(fnpath);
 
@@ -142,13 +144,17 @@ int main(int argc, char* argv[]) {
     CONNECT_TO_CMD_BROADCAST();
     SUBSCRIBE_TO_CMD("exit");
     SUBSCRIBE_TO_CMD("quit");
+    SUBSCRIBE_TO_CMD("help");
+    SUBSCRIBE_TO_CMD("debug");
+    SUBSCRIBE_TO_CMD("about");
     logger_notify("Terminal");
 
     while (LOG_SIMPLE && keepRunning) usleep(1000); // Wait for logger to activate
 
     LINFO("%s version %s successfully loaded and started!", SOFTWARE_NAME, VERSION_STRING);
 
-    LINFO("Press ENTER to terminate program.");
+    IN_TERMINAL_MODE = true;
+    LINFO("Type 'exit' to terminate program, 'about' for information about the project or 'help' for a list of commands.");
     char buf[MAX_CMD_LEN];
     buf[MAX_CMD_LEN-1] = '\0';
     fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
@@ -157,7 +163,7 @@ int main(int argc, char* argv[]) {
         usleep(1000);
         int numRead = read(0, buf, MAX_CMD_LEN-1);
         if (numRead > 0) {
-            buf[numRead] = '\0';
+            buf[numRead-1] = '\0'; // overwrite \n with \0
             dispatch_command(buf);
         }
     }, {
@@ -167,7 +173,33 @@ int main(int argc, char* argv[]) {
         HANDLE_COMMAND("quit", {
             EXIT_CMD_HANDLER();
         })
+        else HANDLE_COMMAND("help", {
+            LINFO(RESOURCE_HELP_GENERAL, SOFTWARE_NAME, VERSION_STRING);
+        })
+        HANDLE_COMMAND("debug verbose"     , { LOG_LEVEL = log_verbose; })
+        else HANDLE_COMMAND("debug verb"   , { LOG_LEVEL = log_verbose; })
+        else HANDLE_COMMAND("debug v"      , { LOG_LEVEL = log_verbose; })
+        else HANDLE_COMMAND("debug debug"  , { LOG_LEVEL = log_debug; })
+        else HANDLE_COMMAND("debug debg"   , { LOG_LEVEL = log_debug; })
+        else HANDLE_COMMAND("debug d"      , { LOG_LEVEL = log_debug; })
+        else HANDLE_COMMAND("debug info"   , { LOG_LEVEL = log_info; })
+        else HANDLE_COMMAND("debug i"      , { LOG_LEVEL = log_info; })
+        else HANDLE_COMMAND("debug warning", { LOG_LEVEL = log_warn; })
+        else HANDLE_COMMAND("debug warn"   , { LOG_LEVEL = log_warn; })
+        else HANDLE_COMMAND("debug w"      , { LOG_LEVEL = log_warn; })
+        else HANDLE_COMMAND("debug fatal"  , { LOG_LEVEL = log_fatal; })
+        else HANDLE_COMMAND("debug fail"   , { LOG_LEVEL = log_fatal; })
+        else HANDLE_COMMAND("debug f"      , { LOG_LEVEL = log_fatal; })
+        else HANDLE_COMMAND("debug", {
+            if (strlen(RECEIVED_CMD) > 6) {
+                LFATAL("debug: '%s' is not a valid log level!", &RECEIVED_CMD[6]);
+            } else {
+                LFATAL("debug: Please provide a log level.");
+            }
+        })
     })
+
+    IN_TERMINAL_MODE = false;
 
     CMD_HANDLER_CLEANUP();
 

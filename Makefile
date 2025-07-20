@@ -5,6 +5,7 @@ OBJFILES    := build/rss-server.o \
 				build/utils.o \
 				build/settings.o \
 				build/internals.o \
+				build/resources.o \
 				build/logger/logger.o \
 				build/gui/gui.o \
 				build/gui/resources.o \

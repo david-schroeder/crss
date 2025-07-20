@@ -30,7 +30,6 @@ char* get_time_string() {
 
 static char *get_print_string(enum log_level level, const char *func_location, char *tmp, enum color_specifier fnp_color) {
     char* formatted_string = calloc(MAX_LOG_FMT_LEN, sizeof(char));
-
     // [%02d:%02d:%02d] [%s::%s::%s] This is a message!
     // [15:08:34] [CRSS::FATAL::network.dispatch.758.login.disconnect] Client disconnected
 
@@ -107,6 +106,10 @@ static char *get_print_string(enum log_level level, const char *func_location, c
     s_reset_style(formatted_string);
     strcat(formatted_string, "\n");
 
+    if (IN_TERMINAL_MODE) {
+        strcat(formatted_string, PROMPT_STRING);
+    }
+
     free(tmp);
     free(time_string);
 
@@ -125,17 +128,30 @@ void console_log(enum log_level level, const char* func_location, const char* fo
 
     char *formatted_string = get_print_string(level, func_location, tmp, color_blue);
 
-    if (LOG_SIMPLE) {
-        if (level >= LOG_LEVEL) {
+    if (level >= LOG_LEVEL) {
+        if (LOG_SIMPLE) {
             printf("\r*%s", formatted_string);
             fflush(stdout);
+        } else {
+            void *ctx = crss_zmq_ctx();
+            void *req = zmq_socket(ctx, ZMQ_REQ);
+            zmq_connect(req, "inproc://logger-log");
+            s_send(req, formatted_string);
+            zmq_close(req);
         }
     } else {
-        void *ctx = crss_zmq_ctx();
-        void *req = zmq_socket(ctx, ZMQ_REQ);
-        zmq_connect(req, "inproc://logger-log");
-        s_send(req, formatted_string);
-        zmq_close(req);
+        if (IN_TERMINAL_MODE) {
+            if (LOG_SIMPLE) {
+                printf("\r%s", PROMPT_STRING);
+                fflush(stdout);
+            } else {
+                void *ctx = crss_zmq_ctx();
+                void *req = zmq_socket(ctx, ZMQ_REQ);
+                zmq_connect(req, "inproc://logger-log");
+                s_send(req, PROMPT_STRING);
+                zmq_close(req);
+            }
+        }
     }
 
     free(formatted_string);
@@ -154,6 +170,11 @@ void console_log_direct(enum log_level level, const char* func_location, const c
     if (level >= LOG_LEVEL) {
         printf("\r\033[35m*\033[0m%s", formatted_string);
         fflush(stdout);
+    } else {
+        if (IN_TERMINAL_MODE) {
+            printf("\r%s", PROMPT_STRING);
+            fflush(stdout);
+        }
     }
 
     free(formatted_string);
