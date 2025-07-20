@@ -58,7 +58,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state) {
 static struct argp argp = { options, parse_opt, 0, doc };
 
 void parse_args(int argc, char* argv[]) {
-    reset_all_settings();
     argp_program_version = VERSION_STRING; // I hate this
     // Initialize
     struct arguments arguments;
@@ -85,47 +84,32 @@ static volatile int keepRunning = 1;
 
 void intHandler(int dummy) {
     printf("\r");
-    console_log(log_debug, "main.intHandler", "%d", dummy);
+    console_log(log_debug, "main.intHandler", "Goodbye!", dummy);
     keepRunning = 0;
-    if (WITH_GUI) {
-        terminateGUI();
-    }
+    dispatch_command("exit");
 }
 
 int return_code;
 
-// all for one fancy line of text...
-#define THREAD_WRAPPER(name, compound) \
-    const char *init_fp = (const char *)fp; \
-    const char *fnpath = name "_bootstrap"; \
-    LVERBOSE("Launching " name " subsystem..."); \
-    fnpath = init_fp; \
-    compound \
-    return NULL;
-
-#define DECLARE_THREAD_WRAPPER(name, compound) \
-    static void *name ## _wrapper(void *fp) { \
-        THREAD_WRAPPER(#name, compound); \
-    }
-
-#define LAUNCH_WRAPPED_THREAD(name) \
-    pthread_t name ## _thread; \
-    pthread_create(&name ## _thread, NULL, name ## _wrapper, (void *)fnpath)
-
 DECLARE_THREAD_WRAPPER(logger, {
     // dispatch to logger thread here
+    // that is, this code will be run in a new thread
+    int rc = run_logger(2);
+    LDEBUG("Logger exited with code %d", rc);
 });
 
 DECLARE_THREAD_WRAPPER(gui, {
-    return_code = runGUI((char*)fnpath, 0, NULL);
-    LINFO("GUI exited with code %d", return_code);
+    return_code = run_gui(0, NULL);
+    LDEBUG("GUI exited with code %d", return_code);
 });
 
 int main(int argc, char* argv[]) {
     const char *fnpath = "main";
 
+    reset_all_settings();
+
     // Obtain SOFTWARE_NAME, LONG_SOFTWARE_NAME, LOG_LEVEL, SERVER_IP, SERVER_PORT and VERSION_STRING
-    parse_args(argc, argv); // Also initialise settings
+    parse_args(argc, argv);
 
     char *start_time = get_time_string();
     LINFO("Launching %s at %s!", LONG_SOFTWARE_NAME, start_time);
@@ -138,22 +122,64 @@ int main(int argc, char* argv[]) {
     LDEBUG("Configuration: IP %s, PORT %d, NAME %s, DBG_LVL %d, GUI %d", SERVER_IP, SERVER_PORT, SOFTWARE_NAME, \
                 LOG_LEVEL, WITH_GUI);
 
+    LVERBOSE("Initializing!");
+
+    // create ZMQ context
     crss_initialize(fnpath);
-    
+
     LINFO("Dispatching worker threads...");
+
+    LDEBUG("Launching Logger Thread!");
+    // logger thread available via `pthread_t logger_thread`;
+    LAUNCH_WRAPPED_THREAD(logger);
+
     LDEBUG("Launching GUI Thread!");
 
     return_code = 0;
 
-    // logger thread available via `pthread_t logger_thread`;
-    LAUNCH_WRAPPED_THREAD(logger);
     LAUNCH_WRAPPED_THREAD(gui);
+    
+    CONNECT_TO_CMD_BROADCAST();
+    SUBSCRIBE_TO_CMD("exit");
+    SUBSCRIBE_TO_CMD("quit");
+    logger_notify("Terminal");
+
+    while (LOG_SIMPLE && keepRunning) usleep(1000); // Wait for logger to activate
 
     LINFO("%s version %s successfully loaded and started!", SOFTWARE_NAME, VERSION_STRING);
 
     LINFO("Press ENTER to terminate program.");
-    char in;
-    scanf("%c", &in);
+    char buf[MAX_CMD_LEN];
+    buf[MAX_CMD_LEN-1] = '\0';
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+
+    RUN_CMD_HANDLER({
+        usleep(1000);
+        int numRead = read(0, buf, MAX_CMD_LEN-1);
+        if (numRead > 0) {
+            buf[numRead] = '\0';
+            dispatch_command(buf);
+        }
+    }, {
+        HANDLE_COMMAND("exit", {
+            EXIT_CMD_HANDLER();
+        })
+        HANDLE_COMMAND("quit", {
+            EXIT_CMD_HANDLER();
+        })
+    })
+
+    CMD_HANDLER_CLEANUP();
+
+    DLINFO("Joining worker threads...");
+
+    JOIN_WRAPPED_THREAD(gui);
+    DLDEBUG("Joined GUI thread!");
+    JOIN_WRAPPED_THREAD(logger);
+    DLDEBUG("Joined Logger thread!");
+
+    LINFO("All threads joined!");
+
 
     switch (return_code) {
         case 0: LINFO("Terminating normally!"); break;
@@ -162,5 +188,7 @@ int main(int argc, char* argv[]) {
 
     // Cleanup and exit
     free(VERSION_STRING);
+    zmq_ctx_term(crss_zmq_ctx());
+
     return return_code;
 }

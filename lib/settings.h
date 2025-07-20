@@ -11,6 +11,7 @@ extern char *VERSION_STRING;
 
 extern int MAX_LOG_FMT_LEN;
 extern int MAX_FN_PATH_LEN;
+extern int MAX_CMD_LEN;
 extern const char *FNP_DELIM;
 extern int LOG_LEVEL;
 
@@ -33,5 +34,12 @@ Resets all settings to their default state.
 @return null
 */
 void reset_all_settings();
+
+/*
+Toggles `LOG_SIMPLE`.
+
+@return New value of `LOG_SIMPLE`.
+*/
+bool switch_logger_protocol(void);
 
 #endif // SETTINGS_H

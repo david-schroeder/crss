@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include "settings.h"
+#include "internals.h"
 
 #include <stdio.h>
 #include <stddef.h>
@@ -15,6 +16,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 /*
 Log verbose message.
@@ -50,6 +52,20 @@ Log fatal message.
 Assumes `fnpath` is defined and contains the current function identifier.
 */
 #define LFATAL(...) console_log(log_fatal, fnpath, __VA_ARGS__)
+
+#if __STDC_VERSION__ < 199901L
+    #define DLVERBOSE(...) console_log_direct(log_verbose, fnpath, __VA_ARGS__)
+    #define DLDEBUG(...) console_log_direct(log_debug, fnpath, __VA_ARGS__)
+    #define DLINFO(...) console_log_direct(log_info, fnpath, __VA_ARGS__)
+    #define DLWARN(...) console_log_direct(log_warn, fnpath, __VA_ARGS__)
+    #define DLFATAL(...) console_log_direct(log_fatal, fnpath, __VA_ARGS__)
+#else
+    #define DLVERBOSE(...) console_log_direct(log_verbose, __func__, __VA_ARGS__)
+    #define DLDEBUG(...) console_log_direct(log_debug, __func__, __VA_ARGS__)
+    #define DLINFO(...) console_log_direct(log_info, __func__, __VA_ARGS__)
+    #define DLWARN(...) console_log_direct(log_warn, __func__, __VA_ARGS__)
+    #define DLFATAL(...) console_log_direct(log_fatal, __func__, __VA_ARGS__)
+#endif
 
 enum log_level {
     log_verbose=0,
@@ -125,6 +141,8 @@ Optionally logs a formatted message, depending on <level>.
 @param format - the format string to print
 */
 void console_log(enum log_level level, const char* func_location, const char* format, ...);
+
+void console_log_direct(enum log_level level, const char* func_location, const char* format, ...);
 
 /*
 Get Callee function identifier.

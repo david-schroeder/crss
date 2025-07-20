@@ -44,9 +44,12 @@ struct _CrssApp {
 };
 G_DEFINE_TYPE(CrssApp, crss_app, GTK_TYPE_APPLICATION);
 
-static void crss_app_init(CrssApp *app) {}
-
 CrssAppWindow *WINDOW;
+CrssApp *APP;
+
+static void crss_app_init(CrssApp *app) {
+    APP = app;
+}
 
 static void crss_app_activate(GApplication *app) {
     GUI_PATH("activate");
@@ -57,10 +60,10 @@ static void crss_app_activate(GApplication *app) {
 
     if (!win->console_text_view || !win->console_command_entry || !win->graph_area) {
         LFATAL("Failed to construct GUI!");
-        exit(1);
+        dispatch_command("exit");
+    } else {
+        gtk_window_present(GTK_WINDOW(win));
     }
-
-    gtk_window_present(GTK_WINDOW(win));
 }
 
 static void crss_app_class_init(CrssAppClass *cls) {
@@ -88,8 +91,8 @@ void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
     if (cmd_len == 0) return;
 
     // process command...
-    // TODO: emit ZMQ packet here
     LDEBUG("Issued console command '%s'!", cmd);
+    dispatch_command((char *)cmd);
 
     GtkTextBuffer *console_buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(win->console_text_view));
     GtkTextIter console_end_iter;
@@ -108,21 +111,64 @@ void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
 // MAIN FUNCTIONS //
 ////////////////////
 
-void terminateGUI() {
+static gboolean __terminate_gui_inner() {
+    DLDEBUG("Quitting GTK Application!");
+    gtk_widget_unrealize(GTK_WIDGET(WINDOW->graph_area));
     gtk_window_close(GTK_WINDOW(WINDOW));
+    g_application_quit(G_APPLICATION(APP));
+    return G_SOURCE_REMOVE;
 }
 
-int runGUI(char *fnpath, int argc, char **argv) {
-    FUNCPATH("initGUI");
+void terminate_gui() {
+    DLVERBOSE("Scheduling GTK Application Quit!");
+    g_idle_add((GSourceFunc)__terminate_gui_inner, NULL);
+}
 
-    LINFO("Initializing GUI!");
+static void gui_cmd_handler(char *fnpath) {
+    FUNCPATH("cmd_handler");
 
     LVERBOSE("Setting up sockets...");
 
-    LVERBOSE("Starting GTK app...");
+    CONNECT_TO_CMD_BROADCAST();
+    SUBSCRIBE_TO_CMD("gui");
+    SUBSCRIBE_TO_CMD("exit");
+    SUBSCRIBE_TO_CMD("quit");
 
-    int status = g_application_run(G_APPLICATION(crss_app_new()), argc, argv);
-    free(fnpath);
+    LVERBOSE("Notifying Logger...");
+    logger_notify("GUI");
+
+    LVERBOSE("Entering command park loop...");
+    RUN_CMD_HANDLER({}, {
+        HANDLE_COMMAND("exit", {
+            terminate_gui();
+            EXIT_CMD_HANDLER();
+        })
+        HANDLE_COMMAND("quit", {
+            terminate_gui();
+            EXIT_CMD_HANDLER();
+        })
+    })
+
+    CMD_HANDLER_CLEANUP();
+}
+
+DECLARE_THREAD_WRAPPER(gui_cmd_handler, {gui_cmd_handler((char *)fnpath);})
+
+int run_gui(int argc, char **argv) {
+    const char *fnpath = "gui.init";
+    LDEBUG("Initializing GUI!");
+
+    LAUNCH_WRAPPED_THREAD(gui_cmd_handler);
+
+    LVERBOSE("Starting GTK app...");
+    CrssApp *app = crss_app_new();
+    int status = g_application_run(G_APPLICATION(app), argc, argv);
+    g_object_unref(app);
+    WITH_GUI = 0;
+    LVERBOSE("Exited GTK app!");
+
+    JOIN_WRAPPED_THREAD(gui_cmd_handler);
+    LVERBOSE("Command handler thread joined!");
 
     return status;
 }

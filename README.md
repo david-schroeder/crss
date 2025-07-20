@@ -5,8 +5,10 @@ CRSS (C Redstone Speedup Server) is a Minecraft Server written to compile redsto
 ## Table of Contents
 1. The Project
     1. Project Structure
-    2. Roadmap
-    3. About
+    2. Working with the Source Code
+        1. Function Identifiers
+    3. Roadmap
+    4. About
 2. User Guide
     1. GUI Documentation
     2. Console Commands
@@ -22,7 +24,7 @@ CRSS (C Redstone Speedup Server) is a Minecraft Server written to compile redsto
     3. Game Speed
 
 ## 1. The Project
-### 1.1 Project Structure
+### 1.1. Project Structure
 CRSS is organized hierarchically into components. The toplevel components, and several lower-level components are bound to individual threads:
 ```
 CRSS Master
@@ -38,9 +40,39 @@ CRSS Master
     └── Graph Renderer
 ```
 
-### 1.2. Roadmap
+### 1.2. Working with the Source Code
+Most components and functions in the CRSS/RedSynth source code are well-documented
+and straightforward. There's a few things that should still be addressed:
+
+#### 1.2.1. Function Identifiers
+Many functions take an initial argument `fnpath`, which is typically a `char *` or
+a `const char *` and is used for logging. This string practically contains the call
+stack in dot notation; if a Minecraft client using version 1.18.2 was disconnected 
+from the game during login, the disconnect function may internally assume the value
+`network.game.dispatch.758.login.disconnect` for its `fnpath` variable. The caller,
+i.e. the (failed) login function, would then pass `network.game.dispatch.758.login`
+as an argument to the function.
+
+There's a few guidelines to be aware of that pertain to this common function
+parameter:
+- The *callee* function is responsible for appending its own identifier string to
+the end of the passed `fnpath` value
+- For this, the function `get_fn_path` ([utils.h](lib/utils.h)) is recommended,
+which allocates a new string containing the correct value for the callee's
+`fnpath` variable
+- Because the parameter is uniformly named `fnpath` in most cases, the most standard
+use case for `get_fn_path` is wrapped into the macro `FUNCPATH(funcname)`
+([utils.h](lib/utils.h)), which expands to `fnpath = get_fn_path(fnpath, funcname)`.
+Note that the resulting string in `fnpath` must still be freed, even if its
+declaration is hidden by macro
+- Certain functions, especially (GTK) callback functions or thread functions, cannot
+(or should not) accept an `fnpath` parameter. For these functions, `fnpath` should
+be statically declared as a `const char *` at the top of the function. There may
+be a macro for this in the future.
+
+### 1.3. Roadmap
 Next:
-- proper gui setup
+- logging network
 - specifically opengl support
 - graph rendering in 3d ogl
 

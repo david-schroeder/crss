@@ -7,6 +7,7 @@
 #include "internals.h"
 
 #include "gui/gui.h"
+#include "logger/logger.h"
 
 
 struct arguments {

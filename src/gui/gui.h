@@ -2,6 +2,7 @@
 #define GUI_H
 
 #include "utils.h"
+#include "internals.h"
 
 #include "gtk/gtk.h"
 
@@ -23,20 +24,19 @@ void crss_app_window_open(CrssAppWindow *win, GFile *file);
 Blocking wrapper function for GTK Application runner.
 
 Initializes GTK Window, sets up inproc ZMQ sockets and logging,
-and runs main window loop until closed or terminated via `terminateGUI()`.
+and runs main window loop until closed or terminated via `terminate_gui()`.
 
-@param fnpath Caller Function Identifier
 @param argc GTK Application argument count
 @param argv GTK Application argument string list
 @return Exit code of GTK Application
 */
-int runGUI(char *fnpath, int argc, char **argv);
+int run_gui(int argc, char **argv);
 
 /*
 Close GTK Application.
 
 Performs cleanup for various GUI internals and exits the GTK application.
 */
-void terminateGUI();
+void terminate_gui();
 
 #endif // GUI_H

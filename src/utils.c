@@ -28,22 +28,11 @@ char* get_time_string() {
     return ret;
 }
 
-// NOTE: think about what messages are sent to GUI console / ZMQ / multiple channels / etc...
-// TODO: rewrite
-void console_log(enum log_level level, const char* func_location, const char* format, ...) {
-
-    if (level < LOG_LEVEL) { return; }
-
+static char *get_print_string(enum log_level level, const char *func_location, char *tmp, enum color_specifier fnp_color) {
     char* formatted_string = calloc(MAX_LOG_FMT_LEN, sizeof(char));
-    char* tmp = calloc(MAX_LOG_FMT_LEN, sizeof(char));
-
-    va_list argptr;
-    va_start(argptr, format);
-    vsnprintf(tmp, MAX_LOG_FMT_LEN, format, argptr);
-    va_end(argptr);
 
     // [%02d:%02d:%02d] [%s::%s::%s] This is a message!
-    // [15:08:34] [CRSS::FATAL::main.network.handler.758.login] Client disconnected
+    // [15:08:34] [CRSS::FATAL::network.dispatch.758.login.disconnect] Client disconnected
 
     // [
     s_reset_style(formatted_string);
@@ -95,7 +84,7 @@ void console_log(enum log_level level, const char* func_location, const char* fo
     s_reset_style(formatted_string);
     strcat(formatted_string, "::");
 
-    s_set_style(formatted_string, style_regular, color_blue);
+    s_set_style(formatted_string, style_regular, fnp_color);
     strcat(formatted_string, func_location);
     s_reset_style(formatted_string);
     strcat(formatted_string, "] ");
@@ -118,12 +107,56 @@ void console_log(enum log_level level, const char* func_location, const char* fo
     s_reset_style(formatted_string);
     strcat(formatted_string, "\n");
 
-    printf("%s", formatted_string);
-    fflush(stdout);
-
-    free(formatted_string);
     free(tmp);
     free(time_string);
+
+    return formatted_string;
+}
+
+// NOTE: think about what messages are sent to GUI console / ZMQ / multiple channels / etc...
+// TODO: rewrite
+void console_log(enum log_level level, const char* func_location, const char* format, ...) {
+    char* tmp = calloc(MAX_LOG_FMT_LEN, sizeof(char));
+
+    va_list argptr;
+    va_start(argptr, format);
+    vsnprintf(tmp, MAX_LOG_FMT_LEN, format, argptr);
+    va_end(argptr);
+
+    char *formatted_string = get_print_string(level, func_location, tmp, color_blue);
+
+    if (LOG_SIMPLE) {
+        if (level >= LOG_LEVEL) {
+            printf("\r*%s", formatted_string);
+            fflush(stdout);
+        }
+    } else {
+        void *ctx = crss_zmq_ctx();
+        void *req = zmq_socket(ctx, ZMQ_REQ);
+        zmq_connect(req, "inproc://logger-log");
+        s_send(req, formatted_string);
+        zmq_close(req);
+    }
+
+    free(formatted_string);
+}
+
+void console_log_direct(enum log_level level, const char* func_location, const char* format, ...) {
+    char* tmp = calloc(MAX_LOG_FMT_LEN, sizeof(char));
+
+    va_list argptr;
+    va_start(argptr, format);
+    vsnprintf(tmp, MAX_LOG_FMT_LEN, format, argptr);
+    va_end(argptr);
+
+    char *formatted_string = get_print_string(level, func_location, tmp, color_cyan);
+
+    if (level >= LOG_LEVEL) {
+        printf("\r\033[35m*\033[0m%s", formatted_string);
+        fflush(stdout);
+    }
+
+    free(formatted_string);
 }
 
 char* get_fn_path(const char* parent_path, const char* fn_name) {

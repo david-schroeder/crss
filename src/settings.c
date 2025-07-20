@@ -6,8 +6,10 @@ char *VERSION_STRING;
 
 int MAX_LOG_FMT_LEN;
 int MAX_FN_PATH_LEN;
+int MAX_CMD_LEN;
 const char* FNP_DELIM;
 int LOG_LEVEL;
+bool LOG_SIMPLE;
 
 char *SERVER_IP;
 int SERVER_PORT;
@@ -20,10 +22,17 @@ void reset_all_settings() {
 
     MAX_LOG_FMT_LEN = 256;
     MAX_FN_PATH_LEN = 224;
+    MAX_CMD_LEN = 256;
     FNP_DELIM = ".";
     LOG_LEVEL = 0;
+    LOG_SIMPLE = true;
 
     SERVER_IP = "127.0.0.1";
     SERVER_PORT = 25565;
     WITH_GUI = 1;
+}
+
+bool switch_logger_protocol(void) {
+    LOG_SIMPLE = !LOG_SIMPLE;
+    return LOG_SIMPLE;
 }
