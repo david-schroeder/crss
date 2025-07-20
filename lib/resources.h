@@ -12,6 +12,11 @@ Format arguments: Software name, version string
 */
 extern const char *RESOURCE_HELP_GENERAL;
 
-void init_resources(void);
+/*
+About message.
+
+Roughly amounts to name and version info, copyright, licensing and contact information.
+*/
+extern const char *RESOURCE_ABOUT;
 
 #endif // RESOURCES_H

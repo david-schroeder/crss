@@ -9,6 +9,7 @@
 extern char *SOFTWARE_NAME;
 extern char *LONG_SOFTWARE_NAME;
 extern char *VERSION_STRING;
+extern char *SOFTWARE_YEAR;
 
 extern int MAX_LOG_FMT_LEN;
 extern int MAX_FN_PATH_LEN;

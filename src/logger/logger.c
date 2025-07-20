@@ -59,7 +59,7 @@ int run_logger(int n_connections) {
         zmq_poll(sink_items, 3, -1);
         if (sink_items[0].revents & ZMQ_POLLIN) {
             router_msg_t *log_msg = s_recv_msg_router(log_sink);
-            printf("\r\033[31m*\033[0m%s", log_msg->data);
+            printf(LOGGER_CLEAR_PROMPT "\033[31m*\033[0m%s", log_msg->data);
             fflush(stdout);
             free_router_msg(log_msg);
         }

@@ -124,8 +124,6 @@ int main(int argc, char* argv[]) {
 
     LVERBOSE("Initializing!");
 
-    init_resources();
-
     // create ZMQ context
     crss_initialize(fnpath);
 
@@ -173,8 +171,11 @@ int main(int argc, char* argv[]) {
         HANDLE_COMMAND("quit", {
             EXIT_CMD_HANDLER();
         })
-        else HANDLE_COMMAND("help", {
+        HANDLE_COMMAND("help", {
             LINFO(RESOURCE_HELP_GENERAL, SOFTWARE_NAME, VERSION_STRING);
+        })
+        HANDLE_COMMAND("about", {
+            LINFO(RESOURCE_ABOUT, LONG_SOFTWARE_NAME, VERSION_STRING, SOFTWARE_YEAR, SOFTWARE_NAME);
         })
         HANDLE_COMMAND("debug verbose"     , { LOG_LEVEL = log_verbose; })
         else HANDLE_COMMAND("debug verb"   , { LOG_LEVEL = log_verbose; })

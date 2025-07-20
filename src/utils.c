@@ -130,7 +130,7 @@ void console_log(enum log_level level, const char* func_location, const char* fo
 
     if (level >= LOG_LEVEL) {
         if (LOG_SIMPLE) {
-            printf("\r*%s", formatted_string);
+            printf(LOGGER_CLEAR_PROMPT "*%s", formatted_string);
             fflush(stdout);
         } else {
             void *ctx = crss_zmq_ctx();
@@ -142,7 +142,7 @@ void console_log(enum log_level level, const char* func_location, const char* fo
     } else {
         if (IN_TERMINAL_MODE) {
             if (LOG_SIMPLE) {
-                printf("\r%s", PROMPT_STRING);
+                printf(LOGGER_CLEAR_PROMPT "%s", PROMPT_STRING);
                 fflush(stdout);
             } else {
                 void *ctx = crss_zmq_ctx();
@@ -168,11 +168,11 @@ void console_log_direct(enum log_level level, const char* func_location, const c
     char *formatted_string = get_print_string(level, func_location, tmp, color_cyan);
 
     if (level >= LOG_LEVEL) {
-        printf("\r\033[35m*\033[0m%s", formatted_string);
+        printf(LOGGER_CLEAR_PROMPT "\033[35m*\033[0m%s", formatted_string);
         fflush(stdout);
     } else {
         if (IN_TERMINAL_MODE) {
-            printf("\r%s", PROMPT_STRING);
+            printf(LOGGER_CLEAR_PROMPT "%s", PROMPT_STRING);
             fflush(stdout);
         }
     }

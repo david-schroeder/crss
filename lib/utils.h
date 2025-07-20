@@ -53,7 +53,10 @@ Assumes `fnpath` is defined and contains the current function identifier.
 */
 #define LFATAL(...) console_log(log_fatal, fnpath, __VA_ARGS__)
 
+#define LOGGER_CLEAR_PROMPT "\r                                                                         \r"
+
 #if __STDC_VERSION__ < 199901L
+    // TODO: fix the fact that this breaks everything
     #define DLVERBOSE(...) console_log_direct(log_verbose, fnpath, __VA_ARGS__)
     #define DLDEBUG(...) console_log_direct(log_debug, fnpath, __VA_ARGS__)
     #define DLINFO(...) console_log_direct(log_info, fnpath, __VA_ARGS__)
