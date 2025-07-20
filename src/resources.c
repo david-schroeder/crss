@@ -32,16 +32,20 @@ const char *RESOURCE_HELP_GENERAL = "\n"
     NS "";
 
 const char *RESOURCE_ABOUT = "\n"
-    NS "==========================="
-    NS " ___   _____   ____  ____ "
-    NS "/   \\ |  _  \\ /  _/ /  _/ "
-    NS "| |_| | |_| | | |_  | |_  "
-    NS "| |_  |    _/ \\_  \\ \\_  \\ "
-    NS "| | | | |\\ \\   _| |  _| | "
-    NS "\\___/ |_| \\_\\ /___/ /___/ "
-    NL
-    NS "=========================="
-    NL "[" DIM "An Application for optimizing and compiling Minecraft redstone circuits to SystemVerilog" RST "]" NS
+    NS "                             ┌──────────────────────────────┐"
+    NS "                             │   ___   _____   ____  ____   │"
+    NS "                             │  /   \\ |  _  \\ /  _/ /  _/   │"
+    NS "                             │  | |_| | |_| | | |_  | |_    │"
+    NS "                             │  | |_  |    _/ \\_  \\ \\_  \\   │"
+    NS "                             │  | | | | |\\ \\   _| |  _| |   │"
+    NS "                             │  \\___/ |_| \\_\\ /___/ /___/   │"
+    NL "                             │                              │"
+    NS "                             └──────────────────────────────┘"
+    NS
+    NL "[" DIM "An Application for optimizing and compiling Minecraft redstone circuits to SystemVerilog" RST "]"
+    NS
+    NL "                                         ────────"
+    NS
     NL BOLD "Version"
     NL "%s is currently running on version \033[31m%s."
     NS
