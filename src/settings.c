@@ -27,7 +27,7 @@ void reset_all_settings() {
 
     MAX_LOG_FMT_LEN = 8192;
     MAX_FN_PATH_LEN = 480;
-    MAX_CMD_LEN = 256;
+    MAX_CMD_LEN = 8192;
     FNP_DELIM = ".";
     LOG_LEVEL = 0;
     LOG_SIMPLE = true;

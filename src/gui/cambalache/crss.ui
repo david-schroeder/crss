@@ -95,6 +95,7 @@
                         <property name="monospace">True</property>
                         <property name="tooltip-text">Command Console</property>
                         <property name="vexpand">True</property>
+                        <property name="wrap-mode">word</property>
                       </object>
                     </child>
                     <layout>

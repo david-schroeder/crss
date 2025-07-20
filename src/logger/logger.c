@@ -59,8 +59,16 @@ int run_logger(int n_connections) {
         zmq_poll(sink_items, 3, -1);
         if (sink_items[0].revents & ZMQ_POLLIN) {
             router_msg_t *log_msg = s_recv_msg_router(log_sink);
+
             printf(LOGGER_CLEAR_PROMPT "\033[31m*\033[0m%s", log_msg->data);
             fflush(stdout);
+            
+            char *log_cmd = malloc(strlen(log_msg->data)+5);
+            log_cmd[strlen(log_msg->data)+4] = '\0';
+            sprintf(log_cmd, "log %s", log_msg->data);
+            s_send(publisher, log_cmd);
+            free(log_cmd);
+
             free_router_msg(log_msg);
         }
         if (sink_items[1].revents & ZMQ_POLLIN) {

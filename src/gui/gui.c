@@ -90,10 +90,6 @@ void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
 
     if (cmd_len == 0) return;
 
-    // process command...
-    LDEBUG("Issued console command '%s'!", cmd);
-    dispatch_command((char *)cmd);
-
     GtkTextBuffer *console_buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(win->console_text_view));
     GtkTextIter console_end_iter;
     gtk_text_buffer_get_end_iter(console_buf, &console_end_iter);
@@ -101,11 +97,19 @@ void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
     gtk_text_iter_forward_to_end(&console_end_iter);
     gtk_text_buffer_insert(console_buf, &console_end_iter, "\n", 1);
 
-    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(win->console_text_view), &console_end_iter, 0.25, false, 0.0, 0.0);
+    // process command...
+    LDEBUG("GUI issued console command '%s'!", cmd);
+    dispatch_command((char *)cmd);
 
     // clear buffer
     gtk_entry_buffer_delete_text(GTK_ENTRY_BUFFER(cmdBuf), 0, -1);
 }
+
+///////////////////
+// CONFIGURATION //
+///////////////////
+
+static bool _GUI_FORMATTED_LOG = false;
 
 ////////////////////
 // MAIN FUNCTIONS //
@@ -124,6 +128,45 @@ void terminate_gui() {
     g_idle_add((GSourceFunc)__terminate_gui_inner, NULL);
 }
 
+static char *strip_format_chars(char *data) {
+    size_t nchars = strlen(data);
+    char *stripped = malloc(nchars+1);
+    size_t sptr = 0; // stripped pointer
+    bool wait_for_m = false; // A format escape sequence ends in m (e.g. \033[37;1m)
+    for (int i = 0; i < nchars; i++) {
+        char chr = data[i];
+        if (chr == '\033') wait_for_m = true;
+        if (!wait_for_m) {
+            stripped[sptr++] = chr;
+        } else if (chr == 'm') wait_for_m = false;
+    }
+    stripped[sptr] = '\0';
+    free(data);
+    return stripped;
+}
+
+static gboolean gui_console_add(char *message) {
+    if (!_GUI_FORMATTED_LOG) {
+        message = strip_format_chars(message);
+    }
+
+    GtkTextBuffer *console_buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(WINDOW->console_text_view));
+    
+    GtkTextIter console_end_iter;
+    gtk_text_buffer_get_end_iter(console_buf, &console_end_iter);
+
+    gtk_text_buffer_insert(console_buf, &console_end_iter, &message[4], -1);
+    
+    gtk_text_iter_forward_to_end(&console_end_iter);
+    //gtk_text_buffer_insert(console_buf, &console_end_iter, "\n", 1);
+    
+    GtkTextMark *mark = gtk_text_buffer_create_mark(console_buf, NULL, &console_end_iter, false);
+    gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(WINDOW->console_text_view), mark);
+
+    free(message);
+    return G_SOURCE_REMOVE;
+}
+
 static void gui_cmd_handler(char *fnpath) {
     FUNCPATH("cmd_handler");
 
@@ -133,9 +176,13 @@ static void gui_cmd_handler(char *fnpath) {
     SUBSCRIBE_TO_CMD("gui");
     SUBSCRIBE_TO_CMD("exit");
     SUBSCRIBE_TO_CMD("quit");
+    SUBSCRIBE_TO_CMD("log");
 
     LVERBOSE("Notifying Logger...");
     logger_notify("GUI");
+
+    LVERBOSE("Waiting for window to be created...");
+    while (!WINDOW);
 
     LVERBOSE("Entering command park loop...");
     RUN_CMD_HANDLER({}, {
@@ -146,6 +193,10 @@ static void gui_cmd_handler(char *fnpath) {
         HANDLE_COMMAND("quit", {
             terminate_gui();
             EXIT_CMD_HANDLER();
+        })
+        HANDLE_COMMAND("log ", {
+            char *msg = strdup(RECEIVED_CMD);
+            g_idle_add((GSourceFunc)gui_console_add, msg);
         })
     })
 
