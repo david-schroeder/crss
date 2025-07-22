@@ -8,6 +8,7 @@
 #define ITALIC "\033[3m"
 #define BOLDWHITE "\033[0;1m"
 #define BOLDGREEN "\033[32;1m"
+#define BOLDRED "\033[31;1m"
 
 const char *RESOURCE_HELP_GENERAL = "\n"
     NS BOLD "Command Help for %s %s"
@@ -31,21 +32,24 @@ const char *RESOURCE_HELP_GENERAL = "\n"
     NS "+---------+-------+----------------------------+"
     NS "";
 
-const char *RESOURCE_ABOUT = "\n"
-    NS "                             ┌──────────────────────────────┐"
-    NS "                             │   ___   _____   ____  ____   │"
-    NS "                             │  /   \\ |  _  \\ /  _/ /  _/   │"
-    NS "                             │  | |_| | |_| | | |_  | |_    │"
-    NS "                             │  | |_  |    _/ \\_  \\ \\_  \\   │"
-    NS "                             │  | | | | |\\ \\   _| |  _| |   │"
-    NS "                             │  \\___/ |_| \\_\\ /___/ /___/   │"
-    NL "                             │                              │"
-    NS "                             └──────────────────────────────┘"
+const char *RESOURCE_SPLASH = "\n"
+    NS "                          ┌────────────────────────────────────┐"
+    NS "                          │ " BOLDRED "  _____ " RST "   _____   ______  ______  │"
+    NS "                          │ " BOLDRED " /  _  \\ " RST " |  _  \\ /  ___/ /  ___/  │"
+    NS "                          │ " BOLDRED " | | |_| " RST " | |_| | | |___  | |___   │"
+    NS "                          │ " BOLDRED " | |  _  " RST " |    _/ \\___  \\ \\___  \\  │"
+    NS "                          │ " BOLDRED " | |_| | " RST " | |\\ \\   ___| |  ___| |  │"
+    NS "                          │ " BOLDRED " \\_____/ " RST " |_| \\_\\ /_____/ /_____/  │"
+    NL "                          │                                    │"
+    NS "                          └────────────────────────────────────┘"
     NS
     NL "[" DIM "An Application for optimizing and compiling Minecraft redstone circuits to SystemVerilog" RST "]"
     NS
     NL "                                         ────────"
-    NS
+    NS;
+
+const char *RESOURCE_ABOUT = "\n"
+    "%s"
     NL BOLD "Version"
     NL "%s is currently running on version \033[31m%s."
     NS

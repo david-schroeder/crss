@@ -145,9 +145,12 @@ int main(int argc, char* argv[]) {
     SUBSCRIBE_TO_CMD("help");
     SUBSCRIBE_TO_CMD("debug");
     SUBSCRIBE_TO_CMD("about");
+    SUBSCRIBE_TO_CMD("splash");
     logger_notify("Terminal");
 
     while (LOG_SIMPLE && keepRunning) usleep(1000); // Wait for logger to activate
+
+    LINFO(RESOURCE_SPLASH);
 
     LINFO("%s version %s successfully loaded and started!", SOFTWARE_NAME, VERSION_STRING);
 
@@ -175,7 +178,10 @@ int main(int argc, char* argv[]) {
             LINFO(RESOURCE_HELP_GENERAL, SOFTWARE_NAME, VERSION_STRING);
         })
         HANDLE_COMMAND("about", {
-            LINFO(RESOURCE_ABOUT, LONG_SOFTWARE_NAME, VERSION_STRING, SOFTWARE_YEAR, SOFTWARE_NAME);
+            LINFO(RESOURCE_ABOUT, RESOURCE_SPLASH, LONG_SOFTWARE_NAME, VERSION_STRING, SOFTWARE_YEAR, SOFTWARE_NAME);
+        })
+        HANDLE_COMMAND("splash", {
+            LINFO(RESOURCE_SPLASH);
         })
         HANDLE_COMMAND("debug verbose"     , { LOG_LEVEL = log_verbose; })
         else HANDLE_COMMAND("debug verb"   , { LOG_LEVEL = log_verbose; })
