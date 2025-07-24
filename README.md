@@ -13,11 +13,15 @@ CRSS (C Redstone Speedup Server) is a Minecraft Server written to compile redsto
     1. GUI Documentation
     2. Console Commands
     3. Configuration Options
+    4. In-Game Features
+        1. Plots
 3. Reference Guide
     1. RedSynth implementation
         1. Optimizer passes
     2. Server implementation
     3. QoL Server Features
+    4. Miscellaneous
+        1. Logger
 4. Performance
     1. FPGA QoR and Usage
     2. FPGA Speed
@@ -35,7 +39,7 @@ CRSS Master
 ├── Minecraft Server
 │   ├── Networking
 │   └── Game Logic
-├── Command Line
+├── Logger
 └── GUI
     └── Graph Renderer
 ```
@@ -72,7 +76,7 @@ be a macro for this in the future.
 
 ### 1.3. Roadmap
 Next:
-- logging network
+- plots
 - specifically opengl support
 - graph rendering in 3d ogl
 
@@ -87,6 +91,16 @@ The GUI is split up into multiple components:
 - Runtime metrics + Configuration
 - Hardware + FPGA State overview
 - Generated HDL, reports etc. viewport
+
+### 2.4. In-Game Features
+
+#### 2.4.1 Plots
+
+Plot sizes are dynamic, and the suggested way to track plots is by using labels. This results in some interesting implications for creating and using plots:
+
+- Plots must be created with a name via `/plot new <plotname> [<size>]`, where `<size>` is the side length of the plot in units of 16 blocks.
+- If you wish to select a certain plot position, please use the extended syntax `/plot new <plotname> <size> <x> <z>`.
+- Since plots can have dynamic sizes, they are layed out in a *virtual* grid, where each grid field is one plot. Traveling between plots by going over the edge is thus possible, but not the recommended way of transport, which is `/plot visit <plotname>`.
 
 # License
 CRSS is licensed under CC BY-NC-SA 4.0.

@@ -2,5 +2,5 @@
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
 <!-- Created with Cambalache 0.96.1 -->
 <cambalache-project version="0.96.0" target_tk="gtk-4.0">
-  <ui template-class="CrssAppWindow" filename="crss.ui" sha256="9a7ce6d7af015680b69d48b68522ba992e2addbcd2df484d032348c4268d9fb2"/>
+  <ui template-class="CrssAppWindow" filename="crss.ui" sha256="f527225b2f3f85b23af7eb500910dc14308774ed6cde37fc0bc21700fb542ea0"/>
 </cambalache-project>

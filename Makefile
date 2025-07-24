@@ -1,4 +1,4 @@
-CFLAGS		:= -Wall -g -O0 -D DEBUG -Ilib -lpthread `pkg-config gtk4 libzmq --cflags --libs`
+CFLAGS		:= -Wall -g -O0 -D DEBUG -Ilib -lpthread `pkg-config gtk4 libzmq epoxy --cflags --libs`
 CC			:= clang
 OBJFILES    := build/rss-server.o \
 				build/version.o \
@@ -9,6 +9,7 @@ OBJFILES    := build/rss-server.o \
 				build/logger/logger.o \
 				build/gui/gui.o \
 				build/gui/resources.o \
+				build/gui/crss_gl.o \
 				build/core/redsynth/graph.o
 
 VERSION     := v1.0-snapshot-0 # must be accordingly updated

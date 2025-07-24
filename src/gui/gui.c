@@ -1,4 +1,5 @@
 #include "gui.h"
+#include "crss_gl.h"
 
 /////////////////////
 // CRSS APP WINDOW //
@@ -27,6 +28,7 @@ static void crss_app_window_class_init(CrssAppWindowClass *cls) {
     ATTACH_ELEMENT(console_command_entry);
     ATTACH_ELEMENT(graph_area);
     BIND_CALLBACK(issue_console_command_callback);
+    BIND_CALLBACK(render_graph_area);
 }
 
 CrssAppWindow *crss_app_window_new(CrssApp *app) {

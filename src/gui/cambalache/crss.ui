@@ -53,6 +53,7 @@
                 <property name="height-request">0</property>
                 <property name="tooltip-text">Graph Render Area</property>
                 <property name="width-request">500</property>
+                <signal name="render" handler="render_graph_area"/>
               </object>
             </child>
           </object>
