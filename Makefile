@@ -1,4 +1,4 @@
-CFLAGS		:= -Wall -g -O0 -D DEBUG -Ilib -lpthread `pkg-config gtk4 libzmq epoxy --cflags --libs`
+CFLAGS		:= -std=c23 -Wall -Werror -Wno-unused-command-line-argument -fsanitize=address -g -O0 -D DEBUG -Ilib -lpthread `pkg-config gtk4 libzmq epoxy --cflags --libs`
 CC			:= clang
 OBJFILES    := build/rss-server.o \
 				build/version.o \
@@ -10,6 +10,10 @@ OBJFILES    := build/rss-server.o \
 				build/gui/gui.o \
 				build/gui/resources.o \
 				build/gui/crss_gl.o \
+				build/core/coretypes.o \
+				build/core/hashmap.o \
+				build/core/core.o \
+				build/core/plots.o \
 				build/core/redsynth/graph.o
 
 VERSION     := v1.0-snapshot-0 # must be accordingly updated

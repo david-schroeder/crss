@@ -7,6 +7,7 @@
 #include "internals.h"
 #include "resources.h"
 
+#include "core/core.h"
 #include "gui/gui.h"
 #include "logger/logger.h"
 
@@ -47,8 +48,9 @@ and runs command console in main thread until exited.
 The subsystems that are launched are:
 - GUI thread, if GUI is enabled or selected via command-line arguments
 - Command broker thread, which each subsystem can dispatch commands to
-- Network thread
-- Backend threads, such as main game thread and RedSynth thread
+- Master network thread
+- Master core thread
+(Where "master" implies the launch of further threads by the master)
 */
 int main(int argc, char* argv[]);
 

@@ -9,12 +9,14 @@ struct _CrssAppWindow {
     GtkApplicationWindow parent;
     GtkWidget *console_text_view;
     GtkWidget *console_command_entry;
+    GtkWidget *console_text_wrap_button;
     GtkWidget *graph_area; // GLArea
 };
 G_DEFINE_TYPE(CrssAppWindow, crss_app_window, GTK_TYPE_APPLICATION_WINDOW);
 
-// Forward declaration
+// Forward declarations
 void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win);
+void toggle_console_wrap(GtkCheckButton *button, CrssAppWindow *win);
 
 static void crss_app_window_init(CrssAppWindow *win) {
     gtk_widget_init_template(GTK_WIDGET(win));
@@ -26,9 +28,11 @@ static void crss_app_window_class_init(CrssAppWindowClass *cls) {
     #define BIND_CALLBACK(name) gtk_widget_class_bind_template_callback(GTK_WIDGET_CLASS(cls), name)
     ATTACH_ELEMENT(console_text_view);
     ATTACH_ELEMENT(console_command_entry);
+    ATTACH_ELEMENT(console_text_wrap_button);
     ATTACH_ELEMENT(graph_area);
     BIND_CALLBACK(issue_console_command_callback);
     BIND_CALLBACK(render_graph_area);
+    BIND_CALLBACK(toggle_console_wrap);
 }
 
 CrssAppWindow *crss_app_window_new(CrssApp *app) {
@@ -82,7 +86,7 @@ CrssApp *crss_app_new(void) {
 ///////////////
 
 void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
-    GUI_PATH("console.cmd_callback");
+    GUI_PATH("console.callback");
 
     GtkEntryBuffer *cmdBuf = gtk_entry_get_buffer(entry);
 
@@ -105,6 +109,16 @@ void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
 
     // clear buffer
     gtk_entry_buffer_delete_text(GTK_ENTRY_BUFFER(cmdBuf), 0, -1);
+}
+
+void toggle_console_wrap(GtkCheckButton *button, CrssAppWindow *win) {
+    GUI_PATH("console.callback");
+
+    gboolean do_wrap = gtk_check_button_get_active(button);
+    if (do_wrap) LVERBOSE("Toggled console text wrap on!");
+    else LVERBOSE("Toggled console text wrap off!");
+
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(win->console_text_view), do_wrap ? GTK_WRAP_WORD : GTK_WRAP_NONE);
 }
 
 ///////////////////
@@ -203,6 +217,8 @@ static void gui_cmd_handler(char *fnpath) {
     })
 
     CMD_HANDLER_CLEANUP();
+
+    free(fnpath);
 }
 
 DECLARE_THREAD_WRAPPER(gui_cmd_handler, {gui_cmd_handler((char *)fnpath);})

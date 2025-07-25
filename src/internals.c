@@ -9,6 +9,7 @@ void crss_initialize(const char *fnpath) {
         LFATAL("Failed to create ZMQ Context!");
         exit(1);
     }
+    free((void*)fnpath);
 }
 
 void *crss_zmq_ctx(void) {

@@ -1,2 +1,2 @@
 clear
-./build/rss-server-v1.0-snapshot-0 $@ 2>&1 | grep -iF "] ["
+./build/rss-server-v1.0-snapshot-0 $@ 2>&1

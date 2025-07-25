@@ -17,6 +17,9 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include <threads.h>
+
+void usleep(uint32_t usec);
 
 /*
 Log verbose message.
@@ -157,5 +160,14 @@ Get Callee function identifier.
 char* get_fn_path(const char* parent_path, const char* fn_name);
 
 #define FUNCPATH(funcname) fnpath = get_fn_path(fnpath, funcname)
+
+struct charlist_ {
+    char **list;
+    uint32_t length;
+};
+
+struct charlist_ *str_split(char *src);
+
+void free_charlist(struct charlist_ *chl);
 
 #endif // UTILS_H

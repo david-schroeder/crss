@@ -9,7 +9,7 @@ static struct argp_option options[] = {
     {"port",     'p',  "PORT",     0,              "Port to host server on"        },
     {"address",  'a',  "ADDRESS",  0,              "Address to host server on"     },
     {"name",     'n',  "NAME",     OPTION_HIDDEN,  "The name to execute by"        },
-    {"longname", 'l', "LONGNAME", OPTION_HIDDEN,  "Software name - long version"  },
+    {"longname", 'l', "LONGNAME",  OPTION_HIDDEN,  "Software name - long version"  },
     {"nogui",    'g',  0,          0,              "Do not open GUI"               },
     {0}
 };
@@ -66,7 +66,7 @@ void parse_args(int argc, char* argv[]) {
     arguments.debug = log_info;
     arguments.address = SERVER_IP;
     arguments.port = SERVER_PORT;
-    arguments.gui = 1;
+    arguments.gui = WITH_GUI;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     // Update settings
@@ -94,14 +94,21 @@ int return_code;
 DECLARE_THREAD_WRAPPER(logger, {
     // dispatch to logger thread here
     // that is, this code will be run in a new thread
-    int rc = run_logger(2);
+    int rc = run_logger(1 + WITH_GUI);
     LDEBUG("Logger exited with code %d", rc);
-});
+})
 
 DECLARE_THREAD_WRAPPER(gui, {
     return_code = run_gui(0, NULL);
     LDEBUG("GUI exited with code %d", return_code);
-});
+})
+
+DECLARE_THREAD_WRAPPER(core_master, {
+    int rc = crss_core_run();
+    LDEBUG("Core exited with code %d", rc);
+})
+
+DECLARE_THREAD_WRAPPER(network_master, {})
 
 int main(int argc, char* argv[]) {
     const char *fnpath = "main";
@@ -113,6 +120,7 @@ int main(int argc, char* argv[]) {
 
     char *start_time = get_time_string();
     LINFO("Launching %s at %s!", LONG_SOFTWARE_NAME, start_time);
+    free(start_time);
 
     signal(SIGINT, intHandler);
 
@@ -122,10 +130,18 @@ int main(int argc, char* argv[]) {
     LDEBUG("Configuration: IP %s, PORT %d, NAME %s, DBG_LVL %d, GUI %d", SERVER_IP, SERVER_PORT, SOFTWARE_NAME, \
                 LOG_LEVEL, WITH_GUI);
 
+    ////////////////////
+    // Initialization //
+    ////////////////////
+    
     LVERBOSE("Initializing!");
 
     // create ZMQ context
     crss_initialize(fnpath);
+
+    ///////////////
+    // Threading //
+    ///////////////
 
     LINFO("Dispatching worker threads...");
 
@@ -133,12 +149,23 @@ int main(int argc, char* argv[]) {
     // logger thread available via `pthread_t logger_thread`;
     LAUNCH_WRAPPED_THREAD(logger);
 
-    LDEBUG("Launching GUI Thread!");
+    pthread_t gui_thread;
+    if (WITH_GUI) {
+        LDEBUG("Launching GUI Thread!");
+        return_code = 0;
+        _RUN_WRAPPED_THREAD(gui);
+    }
 
-    return_code = 0;
+    LDEBUG("Launching Core Master Thread!");
+    LAUNCH_WRAPPED_THREAD(core_master);
 
-    LAUNCH_WRAPPED_THREAD(gui);
+    LDEBUG("Launching Network Master Thread!");
+    LAUNCH_WRAPPED_THREAD(network_master);
     
+    /////////////////////////////////
+    // Command Handling + Mainloop //
+    /////////////////////////////////
+
     CONNECT_TO_CMD_BROADCAST();
     SUBSCRIBE_TO_CMD("exit");
     SUBSCRIBE_TO_CMD("quit");
@@ -212,10 +239,16 @@ int main(int argc, char* argv[]) {
 
     DLINFO("Joining worker threads...");
 
-    JOIN_WRAPPED_THREAD(gui);
-    DLDEBUG("Joined GUI thread!");
+    if (WITH_GUI) {
+        JOIN_WRAPPED_THREAD(gui);
+        DLDEBUG("Joined GUI thread!");
+    }
     JOIN_WRAPPED_THREAD(logger);
     DLDEBUG("Joined Logger thread!");
+    JOIN_WRAPPED_THREAD(core_master);
+    DLDEBUG("Joined Core Master Thread!");
+    JOIN_WRAPPED_THREAD(network_master);
+    DLDEBUG("Joined Network Master Thread!");
 
     LINFO("All threads joined!");
 

@@ -1,5 +1,10 @@
 #include "utils.h"
 
+void usleep(uint32_t usec) {
+    struct timespec ts = { .tv_sec = usec / 1000000, .tv_nsec = (usec % 1000000) * 1000 };
+    thrd_sleep(&ts, NULL);
+}
+
 void set_style(enum style_specifier style_specifier, enum color_specifier color_specifier) {
     printf("\033[%d;%dm", style_specifier, color_specifier);
 }
@@ -178,6 +183,35 @@ void console_log_direct(enum log_level level, const char* func_location, const c
     }
 
     free(formatted_string);
+}
+
+struct charlist_ *str_split(char *src) {
+    struct charlist_ *chl = malloc(sizeof(struct charlist_));
+    chl->length = 0;
+    char *srcdup = strdup(src);
+    char **split_strs = NULL;
+    char *next = strtok(srcdup, " ");
+    while (next != NULL) {
+        chl->length++;
+        if (split_strs == NULL) {
+            split_strs = malloc(sizeof(char *));
+        } else {
+            split_strs = realloc(split_strs, sizeof(char *) * chl->length);
+        }
+        split_strs[chl->length - 1] = strdup(next);
+        next = strtok(NULL, " ");
+    }
+    chl->list = split_strs;
+    free(srcdup);
+    return chl;
+}
+
+void free_charlist(struct charlist_ *chl) {
+    for (int i = 0; i < chl->length; i++) {
+        free(chl->list[i]);
+    }
+    free(chl->list);
+    free(chl);
 }
 
 char* get_fn_path(const char* parent_path, const char* fn_name) {

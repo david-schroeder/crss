@@ -39,6 +39,7 @@ CRSS Master
 ├── Minecraft Server
 │   ├── Networking
 │   └── Game Logic
+|       └── Plots
 ├── Logger
 └── GUI
     └── Graph Renderer
@@ -98,7 +99,7 @@ The GUI is split up into multiple components:
 
 Plot sizes are dynamic, and the suggested way to track plots is by using labels. This results in some interesting implications for creating and using plots:
 
-- Plots must be created with a name via `/plot new <plotname> [<size>]`, where `<size>` is the side length of the plot in units of 16 blocks.
+- Plots must be created with a name via `/plot new <plotname> [<size>]`, where `<size>` is the side length of the plot in units of 16 blocks and defaults to 16.
 - If you wish to select a certain plot position, please use the extended syntax `/plot new <plotname> <size> <x> <z>`.
 - Since plots can have dynamic sizes, they are layed out in a *virtual* grid, where each grid field is one plot. Traveling between plots by going over the edge is thus possible, but not the recommended way of transport, which is `/plot visit <plotname>`.
 

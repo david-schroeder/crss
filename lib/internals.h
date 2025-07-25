@@ -94,12 +94,16 @@ Declare a wrapper function for a new thread.
         THREAD_WRAPPER(#name, compound); \
     }
 
+#define _RUN_WRAPPED_THREAD(name) \
+    pthread_create(&name ## _thread, NULL, name ## _wrapper, (void *)fnpath)
+
 /*
 Run the function `<name>_wrapper` in a new thread, and store the resulting `pthread_t` object in `<name>_thread`
 */
 #define LAUNCH_WRAPPED_THREAD(name) \
     pthread_t name ## _thread; \
-    pthread_create(&name ## _thread, NULL, name ## _wrapper, (void *)fnpath)
+    _RUN_WRAPPED_THREAD(name)
+    
 
 #define JOIN_WRAPPED_THREAD(name) \
     pthread_join(name ## _thread, NULL)
@@ -138,12 +142,16 @@ Polls broadcast socket for incoming commands in a loop.
         zmq_poll(__cmd_handler_pollitems, 1, 0); \
         if (__cmd_handler_pollitems[0].revents & ZMQ_POLLIN) { \
             char *__cmd_handler_cmd_data = s_recv(__cmd_sub_sock, MAX_CMD_LEN); \
+            struct charlist_ *__cmd_handler_cmd_args = str_split(__cmd_handler_cmd_data); \
             handler_code \
             free(__cmd_handler_cmd_data); \
+            free_charlist(__cmd_handler_cmd_args); \
         } \
     }
 
-#define RECEIVED_CMD __cmd_handler_cmd_data
+#define RECEIVED_CMD (__cmd_handler_cmd_data)
+#define RECEIVED_CMD_ARGC (__cmd_handler_cmd_args->length)
+#define RECEIVED_CMD_ARGV (__cmd_handler_cmd_args->list)
 
 /*
 Exit command handler, effectively making this command handler iteration the last
