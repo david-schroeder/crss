@@ -7,4 +7,6 @@ Compile-Time Configuration definitions for CRSS.
 
 #define PLOT_SIZE_DEFAULT 16 // In multiples of 16
 
+#define PLOT_MAX_TRUSTED 100
+
 #endif // CTCONFIG_H

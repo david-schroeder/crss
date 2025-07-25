@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
     // Threading //
     ///////////////
 
-    LINFO("Dispatching worker threads...");
+    LDEBUG("Dispatching worker threads...");
 
     LDEBUG("Launching Logger Thread!");
     // logger thread available via `pthread_t logger_thread`;
