@@ -3,6 +3,8 @@
 
 /*
 Collection of resources, specifically long strings such as help messages.
+
+Resources with no comment preceding them in this file may not have format arguments.
 */
 
 /*
@@ -34,5 +36,9 @@ Format arguments:
 - Software name
 */
 extern const char *RESOURCE_ABOUT;
+
+extern const char *RESOURCE_HELP_PLOT;
+
+extern const char *RESOURCE_HELP_PLOT_CONFIG;
 
 #endif // RESOURCES_H

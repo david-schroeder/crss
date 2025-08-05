@@ -118,7 +118,7 @@ crss_plot_t *new_plot_from_name(crss_plot_manager_t *mgr, uuid_t *owner, char *n
 
     /* Create new plot */
     crss_plot_t *new = new_plot();
-    new->name = strdup(name);
+    new->name = mystrdup(name);
     new->virt_x = pos.x;
     new->virt_z = pos.z;
     copy_uuid(&new->owner_uuid, owner);
@@ -131,7 +131,7 @@ crss_plot_t *new_plot_from_name(crss_plot_manager_t *mgr, uuid_t *owner, char *n
     char pos_string[10];
     pos_string[9] = '\0';
     sprintf(pos_string, "%d;%d", pos.x, pos.z);
-    hashmap_update_item(mgr->world_positions, pos_string, strdup(name));
+    hashmap_update_item(mgr->world_positions, pos_string, mystrdup(name));
 
     return new;
 }
@@ -168,7 +168,7 @@ crss_plot_t *new_plot_from_pos(crss_plot_manager_t *mgr, uuid_t *owner, char *na
 
     /* Create new plot */
     crss_plot_t *new = new_plot();
-    new->name = strdup(name);
+    new->name = mystrdup(name);
     new->virt_x = x;
     new->virt_z = z;
     copy_uuid(&new->owner_uuid, owner);
@@ -178,7 +178,7 @@ crss_plot_t *new_plot_from_pos(crss_plot_manager_t *mgr, uuid_t *owner, char *na
 
     /* Update manager */
     hashmap_update_item(mgr->plots, name, new);
-    hashmap_update_item(mgr->world_positions, pos_string, strdup(name));
+    hashmap_update_item(mgr->world_positions, pos_string, mystrdup(name));
 
     return new;
 }

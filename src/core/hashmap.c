@@ -65,7 +65,7 @@ void *hashmap_update_item(hashmap_t *map, char *key, void *data) {
         if (data == NULL) return NULL; // Miss while reading shouldn't create a value
         // no item found -> insert item
         hashmap_item_t *new_item = malloc(sizeof(hashmap_item_t));
-        char *key_dup = strdup(key);
+        char *key_dup = mystrdup(key);
         new_item->data = data;
         new_item->key = key_dup;
         new_item->hash = hash(key);
@@ -210,7 +210,7 @@ int hash_main() {
         sprintf((char *)rollhash_str, "%u", k);
         k = (k + (i * 0xC93)) ^ 0xB8A25D53;
 
-        char *value = strdup(data_str);
+        char *value = mystrdup(data_str);
         void *old_data;
         if ((old_data = hashmap_update_item(map, rollhash_str, value))) {
             free(old_data);
@@ -219,7 +219,7 @@ int hash_main() {
         //rollhash = hash(rollhash_str);
         data = hash(data_str);
     }
-    hashmap_update_item(map, "testtest", strdup("hello world"));
+    hashmap_update_item(map, "testtest", mystrdup("hello world"));
     /*for (int i = 0; i < 0x100000; i++) {
         char adr[11];
         adr[10] = '\0';

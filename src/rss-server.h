@@ -10,6 +10,7 @@
 #include "core/core.h"
 #include "gui/gui.h"
 #include "logger/logger.h"
+#include "logger/help.h"
 
 
 struct arguments {

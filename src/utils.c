@@ -188,7 +188,7 @@ void console_log_direct(enum log_level level, const char* func_location, const c
 struct charlist_ *str_split(char *src) {
     struct charlist_ *chl = malloc(sizeof(struct charlist_));
     chl->length = 0;
-    char *srcdup = strdup(src);
+    char *srcdup = mystrdup(src);
     char **split_strs = NULL;
     char *next = strtok(srcdup, " ");
     while (next != NULL) {
@@ -198,7 +198,7 @@ struct charlist_ *str_split(char *src) {
         } else {
             split_strs = realloc(split_strs, sizeof(char *) * chl->length);
         }
-        split_strs[chl->length - 1] = strdup(next);
+        split_strs[chl->length - 1] = mystrdup(next);
         next = strtok(NULL, " ");
     }
     chl->list = split_strs;
@@ -220,4 +220,12 @@ char* get_fn_path(const char* parent_path, const char* fn_name) {
     strcat(s, FNP_DELIM);
     strcat(s, fn_name);
     return s;
+}
+
+char *mystrdup(char *src) {
+    if (src == NULL) return NULL;
+    size_t srclen = strlen(src);
+    char *new = malloc(srclen + 1);
+    strcpy(new, src);
+    return new;
 }

@@ -170,4 +170,7 @@ struct charlist_ *str_split(char *src);
 
 void free_charlist(struct charlist_ *chl);
 
+/* Custom strdup implementation */
+char *mystrdup(char *src);
+
 #endif // UTILS_H

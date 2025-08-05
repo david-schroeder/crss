@@ -211,7 +211,7 @@ static void gui_cmd_handler(char *fnpath) {
             EXIT_CMD_HANDLER();
         })
         HANDLE_COMMAND("log ", {
-            char *msg = strdup(RECEIVED_CMD);
+            char *msg = mystrdup(RECEIVED_CMD);
             g_idle_add((GSourceFunc)gui_console_add, msg);
         })
     })

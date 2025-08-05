@@ -94,8 +94,13 @@ int return_code;
 DECLARE_THREAD_WRAPPER(logger, {
     // dispatch to logger thread here
     // that is, this code will be run in a new thread
-    int rc = run_logger(1 + WITH_GUI);
+    int rc = run_logger(2 + WITH_GUI);
     LDEBUG("Logger exited with code %d", rc);
+})
+
+DECLARE_THREAD_WRAPPER(helper, {
+    int rc = run_help();
+    LDEBUG("Helper Service exited with code %d", rc);
 })
 
 DECLARE_THREAD_WRAPPER(gui, {
@@ -149,6 +154,9 @@ int main(int argc, char* argv[]) {
     // logger thread available via `pthread_t logger_thread`;
     LAUNCH_WRAPPED_THREAD(logger);
 
+    LDEBUG("Launching Help Service Thread!");
+    LAUNCH_WRAPPED_THREAD(helper);
+
     pthread_t gui_thread;
     if (WITH_GUI) {
         LDEBUG("Launching GUI Thread!");
@@ -169,7 +177,6 @@ int main(int argc, char* argv[]) {
     CONNECT_TO_CMD_BROADCAST();
     SUBSCRIBE_TO_CMD("exit");
     SUBSCRIBE_TO_CMD("quit");
-    SUBSCRIBE_TO_CMD("help");
     SUBSCRIBE_TO_CMD("debug");
     SUBSCRIBE_TO_CMD("about");
     SUBSCRIBE_TO_CMD("splash");
@@ -200,9 +207,6 @@ int main(int argc, char* argv[]) {
         })
         HANDLE_COMMAND("quit", {
             EXIT_CMD_HANDLER();
-        })
-        HANDLE_COMMAND("help", {
-            LINFO(RESOURCE_HELP_GENERAL, SOFTWARE_NAME, VERSION_STRING);
         })
         HANDLE_COMMAND("about", {
             LINFO(RESOURCE_ABOUT, RESOURCE_SPLASH, LONG_SOFTWARE_NAME, VERSION_STRING, SOFTWARE_YEAR, SOFTWARE_NAME);

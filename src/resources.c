@@ -19,18 +19,9 @@ const char *RESOURCE_HELP_GENERAL = "\n"
     NL "  Minecraft Server" DIM "............" BOLDGREEN "help core"
     NL "    Networking" DIM "................" BOLDGREEN "help network"
     NL "    Schematics" DIM "................" BOLDGREEN "help schems"
-    NL "    Plot Management" DIM "..........." BOLDGREEN "help plots"
+    NL "    Plot Management" DIM "..........." BOLDGREEN "help plot"
     NL "  GUI" DIM "........................." BOLDGREEN "help gui"
-    NS
-    NL ITALIC "General Commands" NL DIM
-    "+---------+-------+----------------------------+"
-    NS "|" BOLDWHITE " Command " RST DIM "|" BOLDWHITE " Alias " RST DIM "|" BOLDWHITE " Description                " RST DIM "|"
-    NS "+---------+-------+----------------------------+"
-    NS "|" RST " help    " DIM "|" RST "  ---  " DIM "|" RST " Display this help screen   " DIM "|"
-    NS "|" RST " quit    " DIM "|" RST " exit  " DIM "|" RST " Quit the application       " DIM "|"
-    NS "|" RST " debug   " DIM "|" RST "  ---  " DIM "|" RST " Set the log level          " DIM "|"
-    NS "+---------+-------+----------------------------+"
-    NS "";
+    NS;
 
 const char *RESOURCE_SPLASH = "\n"
     NS "                          ┌────────────────────────────────────┐"

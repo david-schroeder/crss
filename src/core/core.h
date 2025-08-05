@@ -3,8 +3,10 @@
 
 #include "utils.h"
 #include "internals.h"
+#include "resources.h"
 
 #include "plots.h"
+#include "plotcommands.h"
 
 /*
 CRSS Core.

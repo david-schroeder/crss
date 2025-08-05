@@ -7,6 +7,8 @@ OBJFILES    := build/rss-server.o \
 				build/internals.o \
 				build/resources.o \
 				build/logger/logger.o \
+				build/logger/table.o \
+				build/logger/help.o \
 				build/gui/gui.o \
 				build/gui/resources.o \
 				build/gui/crss_gl.o \
@@ -14,6 +16,7 @@ OBJFILES    := build/rss-server.o \
 				build/core/hashmap.o \
 				build/core/core.o \
 				build/core/plots.o \
+				build/core/plotcommands.o \
 				build/core/redsynth/graph.o
 
 VERSION     := v1.0-snapshot-0 # must be accordingly updated
