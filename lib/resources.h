@@ -37,8 +37,4 @@ Format arguments:
 */
 extern const char *RESOURCE_ABOUT;
 
-extern const char *RESOURCE_HELP_PLOT;
-
-extern const char *RESOURCE_HELP_PLOT_CONFIG;
-
 #endif // RESOURCES_H
