@@ -37,7 +37,7 @@ void reset_all_settings() {
 
     SERVER_IP = "127.0.0.1";
     SERVER_PORT = 25565;
-    WITH_GUI = 0;
+    WITH_GUI = 1;
 }
 
 bool switch_logger_protocol(void) {

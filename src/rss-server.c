@@ -180,6 +180,8 @@ int main(int argc, char* argv[]) {
     SUBSCRIBE_TO_CMD("debug");
     SUBSCRIBE_TO_CMD("about");
     SUBSCRIBE_TO_CMD("splash");
+
+    LVERBOSE("Notifying Logger...");
     logger_notify("Terminal");
 
     while (LOG_SIMPLE && keepRunning) usleep(1000); // Wait for logger to activate

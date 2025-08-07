@@ -24,7 +24,7 @@ NAME        := rss-server-$(VERSION)
 
 run: $(OBJFILES) | build
 	@$(CC) $(CFLAGS) -o build/$(NAME) $^
-	@./build/$(NAME) -d verbose
+	@./build/$(NAME) -d verbose -g
 
 build:
 	mkdir -p $@

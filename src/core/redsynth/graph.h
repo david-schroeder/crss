@@ -30,7 +30,7 @@ typedef struct {
             bool mode;
             uint8_t output;
         } comparator_state;
-    };
+    } node_data;
     uint32_t ticks;
 } rs_node_t;
 

@@ -19,6 +19,7 @@ CRSS (C Redstone Speedup Server) is a Minecraft Server written to compile redsto
     1. RedSynth implementation
         1. Optimizer passes
     2. Server implementation
+        1. Plot storage mechanisms
     3. QoL Server Features
     4. Miscellaneous
         1. Logger
@@ -29,7 +30,7 @@ CRSS (C Redstone Speedup Server) is a Minecraft Server written to compile redsto
 
 ## 1. The Project
 ### 1.1. Project Structure
-CRSS is organized hierarchically into components. The toplevel components, and several lower-level components are bound to individual threads:
+CRSS is organized hierarchically into components. The toplevel components, and several lower-level components may or may not be bound to individual threads:
 ```
 CRSS Master
 ├── RedSynth Backend
@@ -39,8 +40,12 @@ CRSS Master
 ├── Minecraft Server
 │   ├── Networking
 │   └── Game Logic
-|       └── Plots
+|       ├── Plots
+|       |   ├── Graph management
+|       |   └── Storage (Blocks etc.)
+│       └── Players
 ├── Logger
+├── Command Help Service
 └── GUI
     └── Graph Renderer
 ```
@@ -77,7 +82,6 @@ be a macro for this in the future.
 
 ### 1.3. Roadmap
 Next:
-- plots
 - specifically opengl support
 - graph rendering in 3d ogl
 
@@ -99,9 +103,11 @@ The GUI is split up into multiple components:
 
 Plot sizes are dynamic, and the suggested way to track plots is by using labels. This results in some interesting implications for creating and using plots:
 
-- Plots must be created with a name via `/plot new <plotname> [<size>]`, where `<size>` is the side length of the plot in units of 16 blocks and defaults to 16.
-- If you wish to select a certain plot position, please use the extended syntax `/plot new <plotname> <size> <x> <z>`.
+- Plots must be created with a name via `/plot new <plotname> [<size>]`, where `<size>` is the side length of the plot in units of 16 blocks and defaults to 16. Due to internal constraints, a plot will always be a cube, i.e. the maximum height of a plot is also determined by its side length.
+- If you wish to select a certain plot position, please use the extended syntax `/plot new <plotname> <x> <z> <size>`.
 - Since plots can have dynamic sizes, they are layed out in a *virtual* grid, where each grid field is one plot. Traveling between plots by going over the edge is thus possible, but not the recommended way of transport, which is `/plot visit <plotname>`.
+
+#### 3.2.1 Plot Storage Mechanisms
 
 # License
 CRSS is licensed under CC BY-NC-SA 4.0.
