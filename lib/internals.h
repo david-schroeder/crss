@@ -157,7 +157,7 @@ Polls broadcast socket for incoming commands in a loop.
 Exit command handler, effectively making this command handler iteration the last
 */
 #define EXIT_CMD_HANDLER() \
-    __cmd_handler_should_close = true;
+    __cmd_handler_should_close = true
 
 /*
 Execute `handler` if current command starts with `command`.

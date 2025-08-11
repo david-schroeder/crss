@@ -251,6 +251,8 @@ int main(int argc, char* argv[]) {
     }
     JOIN_WRAPPED_THREAD(logger);
     DLDEBUG("Joined Logger thread!");
+    JOIN_WRAPPED_THREAD(helper);
+    DLDEBUG("Joined Helper Service thread!");
     JOIN_WRAPPED_THREAD(core_master);
     DLDEBUG("Joined Core Master Thread!");
     JOIN_WRAPPED_THREAD(network_master);

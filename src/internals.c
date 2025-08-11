@@ -99,6 +99,8 @@ router_msg_t *s_recv_msg_router(void *socket) {
     }
     if (msg_data == NULL) {
         DLWARN("Received less than three frames on a ZMQ router message. This may be an error.");
+        if (msg_address) free(msg_address);
+        free(msg);
         return calloc(1, sizeof(char));
     }
     msg->data = msg_data;
