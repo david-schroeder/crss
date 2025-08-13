@@ -15,6 +15,7 @@ OBJFILES    := build/rss-server.o \
 				build/core/coretypes.o \
 				build/core/hashmap.o \
 				build/core/core.o \
+				build/core/ssvo.o \
 				build/core/plots.o \
 				build/core/plotcommands.o \
 				build/core/redsynth/graph.o

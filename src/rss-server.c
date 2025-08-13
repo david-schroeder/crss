@@ -205,9 +205,13 @@ int main(int argc, char* argv[]) {
         }
     }, {
         HANDLE_COMMAND("exit", {
+            // aim to free after core thread does its accesses
+            // might help remove occasional heap-access-after-free
+            usleep(1000000); // TEMPORARY
             EXIT_CMD_HANDLER();
         })
         HANDLE_COMMAND("quit", {
+            usleep(1000000); // TEMPORARY
             EXIT_CMD_HANDLER();
         })
         HANDLE_COMMAND("about", {
