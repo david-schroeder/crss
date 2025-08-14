@@ -18,6 +18,7 @@ OBJFILES    := build/rss-server.o \
 				build/core/ssvo.o \
 				build/core/plots.o \
 				build/core/plotcommands.o \
+				build/core/plot_storage.o \
 				build/core/redsynth/graph.o
 
 VERSION     := v1.0-snapshot-0 # must be accordingly updated

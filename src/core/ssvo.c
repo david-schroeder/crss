@@ -87,7 +87,6 @@ static void **ssvo_get_leaf_ptr(ssvo_t *ssvo, uint32_t x, uint32_t y, uint32_t z
 
     /* Current node information */
     ovb_t *current_ovb = ssvo->ovt.entries[0];
-    int16_t current_ovb_level = current_ovb->top_level_id;
     ssvo_node_t current_node = 0;
     ssvo_node_t next_node_idx = 0;
     uint8_t child_idx;
@@ -101,14 +100,13 @@ static void **ssvo_get_leaf_ptr(ssvo_t *ssvo, uint32_t x, uint32_t y, uint32_t z
             // We don't need to worry about the entry not existing because
             // it must exist if the MSB is set :)
             current_ovb = ssvo->ovt.entries[current_node & 0x7FFF];
-            current_ovb_level = current_ovb->top_level_id;
             current_node = 0;
         }
         children = &current_ovb->nodes[current_node];
 
         /* Find child index */
         // Bit order: ZYX
-        child_idx = (z >> shamt) & 4 | (y >> shamt) & 2 | (x >> shamt) & 1;
+        child_idx = ((z >> shamt) & 4) | ((y >> shamt) & 2) | ((x >> shamt) & 1);
 
         /* If we're on the final level, return the child */
         // Reinterpret child array as array of void* data pointers according to spec
@@ -131,7 +129,6 @@ static void **ssvo_get_leaf_ptr(ssvo_t *ssvo, uint32_t x, uint32_t y, uint32_t z
                 // Allocate new OVB in OVT
                 //DLVERBOSE("Allocating OVB on level %d!", level);
                 next_node_idx = allocate_new_ovb(ssvo, level, level == 2);
-                current_ovb_level = level;
                 if (next_node_idx == 0) {
                     /* OVT allocation failed -> Critical error */
                     DLFATAL("Critical World Storage error! [OVT Allocation Fail]");
@@ -272,4 +269,5 @@ int ssvo_main(int argc, char *argv[]) {
     //prettyprint_ssvo(fnpath, s);
     free_ssvo(s);
     free(test_array);
+    return 0;
 }

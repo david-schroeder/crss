@@ -7,6 +7,7 @@
 
 #include "plots.h"
 #include "plotcommands.h"
+#include "plot_storage.h"
 
 /*
 CRSS Core.
