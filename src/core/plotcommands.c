@@ -269,3 +269,34 @@ void plot_config_bool(crss_plot_manager_t *mgr, uint32_t argc, char **argv) {
     }
     LINFO("Updated configuration values for plot '%s'.", argv[3]);
 }
+
+void plot_place(crss_plot_manager_t *mgr, uint32_t argc, char **argv) {
+    char *fnpath = "core.plotcommands.place";
+
+    if (argc != 7) THROW_WRONG_ARGC("plot place", "<plotname> <x> <y> <z> <block>");
+
+    TRY_GET_PLOT(argv[2]);
+
+    uint32_t x = atoi(argv[3]);
+    uint32_t y = atoi(argv[4]);
+    uint32_t z = atoi(argv[5]);
+    uint8_t block = atoi(argv[6]);
+    set_block(plot->storage, x, y, z, &block);
+    LINFO("Success");
+}
+
+void plot_get(crss_plot_manager_t *mgr, uint32_t argc, char **argv) {
+    char *fnpath = "core.plotcommands.get";
+
+    if (argc != 6) THROW_WRONG_ARGC("plot get", "<plotname> <x> <y> <z>");
+
+    TRY_GET_PLOT(argv[2]);
+
+    uint32_t x = atoi(argv[3]);
+    uint32_t y = atoi(argv[4]);
+    uint32_t z = atoi(argv[5]);
+    block_t *blk = get_block(plot->storage, x, y, z);
+
+    if (blk == NULL) LINFO("No block at that position.");
+    else LINFO("Block: %d", *blk);
+}

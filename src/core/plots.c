@@ -123,6 +123,7 @@ crss_plot_t *new_plot_from_name(crss_plot_manager_t *mgr, uuid_t *owner, char *n
     new->virt_z = pos.z;
     copy_uuid(&new->owner_uuid, owner);
     new->size = size;
+    new->storage = new_plot_storage(count_bits(size));
 
     LDEBUG("Registering plot with manager...");
 
@@ -173,6 +174,7 @@ crss_plot_t *new_plot_from_pos(crss_plot_manager_t *mgr, uuid_t *owner, char *na
     new->virt_z = z;
     copy_uuid(&new->owner_uuid, owner);
     new->size = size;
+    new->storage = new_plot_storage(count_bits(size));
 
     LDEBUG("Registering plot with manager...");
 
@@ -201,5 +203,6 @@ char *serialize_plot(crss_plot_t *plot) {
 void free_plot(crss_plot_t *plot) {
     free(plot->name);
     free(plot->editor_uuids);
+    if (plot->storage) free_plot_storage(plot->storage);
     free(plot);
 }

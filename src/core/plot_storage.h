@@ -19,9 +19,6 @@ typedef struct {
 /* Blocks */
 typedef uint8_t block_t;
 
-/* Block singletons */
-const block_t AIR_BLOCK = 0;
-
 typedef struct {
     block_t blocks[16][16][16];
 } chunk_t;

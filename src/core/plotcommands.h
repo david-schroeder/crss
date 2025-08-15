@@ -16,6 +16,10 @@ void plot_trust(crss_plot_manager_t *mgr, uint32_t argc, char **argv);
 
 void plot_remove(crss_plot_manager_t *mgr, uint32_t argc, char **argv);
 
+void plot_place(crss_plot_manager_t *mgr, uint32_t argc, char **argv);
+
+void plot_get(crss_plot_manager_t *mgr, uint32_t argc, char **argv);
+
 /*
 Set a configuration value of type bool in a plot
 

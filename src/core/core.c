@@ -50,6 +50,12 @@ int crss_core_run() {
         else HANDLE_COMMAND("plot remove", {
             plot_remove(plotworld, RECEIVED_CMD_ARGC, RECEIVED_CMD_ARGV);
         })
+        HANDLE_COMMAND("plot place", {
+            plot_place(plotworld, RECEIVED_CMD_ARGC, RECEIVED_CMD_ARGV);
+        })
+        HANDLE_COMMAND("plot get", {
+            plot_get(plotworld, RECEIVED_CMD_ARGC, RECEIVED_CMD_ARGV);
+        })
     })
 
     CMD_HANDLER_CLEANUP();

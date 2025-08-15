@@ -94,7 +94,12 @@ int return_code;
 DECLARE_THREAD_WRAPPER(logger, {
     // dispatch to logger thread here
     // that is, this code will be run in a new thread
-    int rc = run_logger(2 + WITH_GUI);
+    // Threads:
+    // - Helper Service
+    // - GUI (Optional)
+    // - Core Master
+    // - Network Master
+    int rc = run_logger(3 + WITH_GUI);
     LDEBUG("Logger exited with code %d", rc);
 })
 
@@ -113,12 +118,17 @@ DECLARE_THREAD_WRAPPER(core_master, {
     LDEBUG("Core exited with code %d", rc);
 })
 
-DECLARE_THREAD_WRAPPER(network_master, {})
+DECLARE_THREAD_WRAPPER(network_master, {
+    int rc = run_network_master(SERVER_IP, SERVER_PORT);
+    LDEBUG("Network master exited with code %d", rc);
+})
 
 int main(int argc, char* argv[]) {
     const char *fnpath = "main";
 
     reset_all_settings();
+
+    init_utils();
 
     // Obtain SOFTWARE_NAME, LONG_SOFTWARE_NAME, LOG_LEVEL, SERVER_IP, SERVER_PORT and VERSION_STRING
     parse_args(argc, argv);
@@ -205,13 +215,9 @@ int main(int argc, char* argv[]) {
         }
     }, {
         HANDLE_COMMAND("exit", {
-            // aim to free after core thread does its accesses
-            // might help remove occasional heap-access-after-free
-            usleep(1000000); // TEMPORARY
             EXIT_CMD_HANDLER();
         })
         HANDLE_COMMAND("quit", {
-            usleep(1000000); // TEMPORARY
             EXIT_CMD_HANDLER();
         })
         HANDLE_COMMAND("about", {
@@ -273,6 +279,7 @@ int main(int argc, char* argv[]) {
     // Cleanup and exit
     free(VERSION_STRING);
     zmq_ctx_term(crss_zmq_ctx());
+    cleanup_utils();
 
     return return_code;
 }

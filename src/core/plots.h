@@ -6,6 +6,7 @@
 #include "hashmap.h"
 #include "coretypes.h"
 #include "ctconfig.h"
+#include "plot_storage.h"
 
 /*
 CRSS Plot Manager.
@@ -27,7 +28,7 @@ typedef struct {
     bool any_can_edit;
 
     /* Data */
-    // TODO
+    plot_storage_t *storage;
 } crss_plot_t;
 
 typedef struct {

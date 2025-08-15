@@ -166,11 +166,17 @@ struct charlist_ {
     uint32_t length;
 };
 
+void init_utils(void);
+
+void cleanup_utils(void);
+
 struct charlist_ *str_split(char *src);
 
 void free_charlist(struct charlist_ *chl);
 
 /* Custom strdup implementation */
 char *mystrdup(char *src);
+
+uint8_t count_bits(uint32_t n);
 
 #endif // UTILS_H

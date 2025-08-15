@@ -20,11 +20,14 @@ block_t *get_block(plot_storage_t *storage, uint32_t x, uint32_t y, uint32_t z) 
     uint8_t ofs_y = y & 0xF;
     uint8_t ofs_z = z & 0xF;
     chunk_t *chunk = ssvo_get_leaf(storage->ssvo, chunk_x, chunk_y, chunk_z);
-    if (chunk == NULL) return (block_t *)&AIR_BLOCK;
+    if (chunk == NULL) return NULL;
     block_t *blk = &chunk->blocks[ofs_z][ofs_y][ofs_x];
     return blk;
 }
 
+/*
+@param block Pointer to block, which is copied into storage.
+*/
 void set_block(plot_storage_t *storage, uint32_t x, uint32_t y, uint32_t z, block_t *block) {
     uint32_t chunk_x = x >> 4;
     uint32_t chunk_y = y >> 4;
@@ -35,7 +38,7 @@ void set_block(plot_storage_t *storage, uint32_t x, uint32_t y, uint32_t z, bloc
     chunk_t *chunk = ssvo_get_leaf(storage->ssvo, chunk_x, chunk_y, chunk_z);
     if (chunk == NULL) {
         /* Allocate new chunk */
-        chunk = calloc(1, sizeof(chunk_t));
+        chunk = calloc(1, sizeof(chunk_t)); // TODO: free this
         ssvo_set_leaf(storage->ssvo, chunk_x, chunk_y, chunk_z, chunk);
     }
     memcpy(&chunk->blocks[ofs_z][ofs_y][ofs_x], block, sizeof(block_t));

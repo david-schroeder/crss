@@ -37,4 +37,6 @@ Format arguments:
 */
 extern const char *RESOURCE_ABOUT;
 
+extern const char *DEFAULT_STATUS_JSON_RESPONSE;
+
 #endif // RESOURCES_H

@@ -185,9 +185,22 @@ void console_log_direct(enum log_level level, const char* func_location, const c
     free(formatted_string);
 }
 
+pthread_mutex_t __str_split_lock;
+
+void init_utils(void) {
+    pthread_mutex_init(&__str_split_lock, NULL);
+}
+
+void cleanup_utils(void) {
+    pthread_mutex_destroy(&__str_split_lock);
+}
+
 struct charlist_ *str_split(char *src) {
+    /* Since strtok uses internal storage between calls, */
+    /* This function is not thread-safe without a mutex. */
     struct charlist_ *chl = malloc(sizeof(struct charlist_));
     chl->length = 0;
+    pthread_mutex_lock(&__str_split_lock);
     char *srcdup = mystrdup(src);
     char **split_strs = NULL;
     char *next = strtok(srcdup, " ");
@@ -203,6 +216,7 @@ struct charlist_ *str_split(char *src) {
     }
     chl->list = split_strs;
     free(srcdup);
+    pthread_mutex_unlock(&__str_split_lock);
     return chl;
 }
 
@@ -228,4 +242,11 @@ char *mystrdup(char *src) {
     char *new = malloc(srclen + 1);
     strcpy(new, src);
     return new;
+}
+
+/* Assumes n >= 1. */
+uint8_t count_bits(uint32_t n) {
+    uint8_t nbits = 0;
+    while ((n >>= 1)) nbits++;
+    return nbits;
 }

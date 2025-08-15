@@ -11,6 +11,7 @@
 #include "gui/gui.h"
 #include "logger/logger.h"
 #include "logger/help.h"
+#include "network/network.h"
 
 
 struct arguments {
