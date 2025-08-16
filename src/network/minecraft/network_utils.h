@@ -3,6 +3,8 @@
 
 #include "utils.h"
 
+#include <zmq.h>
+
 /*
 Packet usage
 
@@ -55,10 +57,32 @@ mcstring_t *new_mcstring(char *s);
 void free_mcstring(mcstring_t *string);
 
 typedef struct {
+    char operation[9];
+    char *data;
+} pairsock_op_t;
+
+typedef enum {
+    CL_HANDSHAKING,
+    CL_STATUS,
+    CL_LOGIN,
+    CL_PLAY,
+    CL_TERMINATED
+} mcclient_state_e;
+
+typedef struct {
     int fd;
     bool compressed;
     bool encrypted;
+    int client_id;
+    mcclient_state_e state;
+    char *username;
 } mcsock_t;
+
+pairsock_op_t *client_pair_recv(void *sock);
+
+pairsock_op_t *client_pair_recv_blocking(void *sock);
+
+void client_pair_send(void *sock, char *operation, char *data);
 
 packet_t *packet_recv(mcsock_t *s);
 

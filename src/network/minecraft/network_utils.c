@@ -1,5 +1,46 @@
 #include "network_utils.h"
 
+static inline pairsock_op_t *_client_pair_recv(void *sock, bool block) {
+    uint32_t length;
+    if (zmq_recv(sock, &length, 4, block ? 0 : ZMQ_DONTWAIT) < 0) {
+        return NULL;
+    }
+    pairsock_op_t *op = malloc(sizeof(pairsock_op_t));
+    op->operation[8] = '\0';
+    char *buf = malloc(length + 9);
+    if (zmq_recv(sock, buf, length + 8, block ? 0 : ZMQ_DONTWAIT) < 0) {
+        DLWARN("Malformed packet [Received length %d] (errno %d)!", length, errno);
+        free(buf);
+        free(op);
+        return NULL;
+    }
+    char *data = malloc(length + 1);
+    memcpy(op->operation, buf, 8);
+    memcpy(data, &buf[8], length);
+    data[length] = '\0';
+    op->data = data;
+    free(buf);
+    return op;
+}
+
+pairsock_op_t *client_pair_recv(void *sock) {
+    return _client_pair_recv(sock, false);
+}
+
+pairsock_op_t *client_pair_recv_blocking(void *sock) {
+    return _client_pair_recv(sock, true);
+}
+
+void client_pair_send(void *sock, char *operation, char *data) {
+    uint32_t len = strlen(data);
+    uint8_t *buf = malloc(8+len);
+    memcpy(buf, operation, 8);
+    memcpy(&buf[8], data, len);
+    zmq_send(sock, &len, 4, 0);
+    zmq_send(sock, buf, len+8, 0);
+    free(buf);
+}
+
 static int32_t sock_read_varint(int fd) {
     char *fnpath = "network.utils.sock_read_varint";
     int32_t varint = 0;
