@@ -164,4 +164,26 @@ mcstring_t *gen_mc_hexdigest(uint8_t *digest, uint32_t len);
 
 mcstring_t *get_request(char *url);
 
+#define SEND_PACKET_FUNCTION_WRAPPER(packid, default_size, inner) \
+    packet_t *pack = new_packet(default_size); \
+    pack->packet_id = packid; \
+    inner \
+    packet_send(pack, conn); \
+    free_packet(pack);
+
+#define ADD_FIELD_BOOL(name) mcsock_write_bool(pack, name)
+#define ADD_FIELD_BYTE(name) mcsock_write_byte(pack, name)
+#define ADD_FIELD_UBYTE(name) mcsock_write_ubyte(pack, name)
+#define ADD_FIELD_SHORT(name) mcsock_write_short(pack, name)
+#define ADD_FIELD_USHORT(name) mcsock_write_ushort(pack, name)
+#define ADD_FIELD_INT(name) mcsock_write_int(pack, name)
+#define ADD_FIELD_LONG(name) mcsock_write_long(pack, name)
+#define ADD_FIELD_FLOAT(name) mcsock_write_float(pack, name)
+#define ADD_FIELD_DOUBLE(name) mcsock_write_double(pack, name)
+#define ADD_FIELD_CSTRING(name) mcsock_write_c_string(pack, name)
+#define ADD_FIELD_VARINT(name) mcsock_write_varint(pack, name)
+#define ADD_FIELD_VARLONG(name) mcsock_write_varlong(pack, name)
+#define ADD_FIELD_BYTE_ARR(name, len) mcsock_write_byte_array(pack, name, len)
+#define ADD_FIELD_UUID(name) mcsock_write_uuid(pack, name)
+
 #endif // NETWORK_UTILS_H

@@ -87,3 +87,341 @@ int uuidcmp(uuid_t *a, uuid_t *b) {
     }
     return diff;
 }
+
+nbt_node_t *new_nbt_node(uint8_t type, char *name) {
+    nbt_node_t *node = calloc(1, sizeof(nbt_node_t));
+    node->type = type;
+    node->name = name;
+    node->name_length = strlen(name);
+    return node;
+}
+
+nbt_node_t *new_nbt_byte(char *name, int8_t value) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Byte, name);
+    node->payload.data_byte = value;
+    return node;
+}
+
+nbt_node_t *new_nbt_short(char *name, int16_t value) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Short, name);
+    node->payload.data_short = value;
+    return node;
+}
+
+nbt_node_t *new_nbt_int(char *name, int32_t value) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Int, name);
+    node->payload.data_int = value;
+    return node;
+}
+
+nbt_node_t *new_nbt_long(char *name, int64_t value) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Long, name);
+    node->payload.data_long = value;
+    return node;
+}
+
+nbt_node_t *new_nbt_float(char *name, float value) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Float, name);
+    node->payload.data_float = value;
+    return node;
+}
+
+nbt_node_t *new_nbt_double(char *name, double value) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Double, name);
+    node->payload.data_double = value;
+    return node;
+}
+
+nbt_node_t *new_nbt_byte_array(char *name, uint8_t *buf, uint32_t len) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Byte_Array, name);
+    node->payload.data_byte_array.data = buf;
+    node->payload.data_byte_array.size = len;
+    return node;
+}
+
+nbt_node_t *new_nbt_string(char *name, char *buf, uint32_t len) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_String, name);
+    node->payload.data_string.data = buf;
+    node->payload.data_string.size = len;
+    return node;
+}
+
+nbt_node_t *new_nbt_cstring(char *name, char *buf) {
+    return new_nbt_string(name, buf, strlen(buf));
+}
+
+nbt_node_t *new_nbt_list(char *name, uint8_t content_tagid) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_List, name);
+    node->payload.data_list.content_tagid = content_tagid;
+    node->payload.data_list.size = NBT_LIST_INIT_SIZE;
+    node->payload.data_list.used_size = 0;
+    node->payload.data_list.contents = calloc(NBT_LIST_INIT_SIZE, sizeof(nbt_node_t));
+    return node;
+}
+
+nbt_node_t *new_nbt_int_array(char *name) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Int_Array, name);
+    node->payload.data_list.size = NBT_LIST_INIT_SIZE;
+    node->payload.data_list.used_size = 0;
+    node->payload.data_list.contents = calloc(NBT_LIST_INIT_SIZE, sizeof(nbt_node_t));
+    return node;
+}
+
+nbt_node_t *new_nbt_long_array(char *name) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Long_Array, name);
+    node->payload.data_list.size = NBT_LIST_INIT_SIZE;
+    node->payload.data_list.used_size = 0;
+    node->payload.data_list.contents = calloc(NBT_LIST_INIT_SIZE, sizeof(nbt_node_t));
+    return node;
+}
+
+nbt_node_t *new_nbt_compound(char *name) {
+    nbt_node_t *node = new_nbt_node(NBT_TAG_Compound, name);
+    node->payload.data_list.size = NBT_LIST_INIT_SIZE;
+    node->payload.data_list.used_size = 0;
+    node->payload.data_list.contents = calloc(NBT_LIST_INIT_SIZE, sizeof(nbt_node_t));
+    return node;
+}
+
+void nbt_append_to_list(nbt_node_t *list, nbt_node_t *item) {
+    if (list->payload.data_list.used_size == list->payload.data_list.size) {
+        /* Allocate more space in list */
+        list->payload.data_list.size <<= 1;
+        list->payload.data_list.contents = realloc(list->payload.data_list.contents, list->payload.data_list.size*sizeof(nbt_node_t *));
+    }
+    /* Save item reference into list */
+    list->payload.data_list.contents[list->payload.data_list.used_size++] = item;
+}
+
+/* Convert `root` into an NBT byte representation */
+/* @param named Whether the node is the value of a key-value pair, i.e. the child of a compound */
+length_buffer_t *serialize_nbt(nbt_node_t *root, bool named) {
+    length_buffer_t *lbuf = malloc(sizeof(length_buffer_t));
+    uint32_t bufsize = 0;
+    uint8_t *buf = NULL;
+    if (named && root->type != NBT_TAG_End) {
+        /* Place ID + 2-byte length and node name inside buf */
+        bufsize = 3 + root->name_length;
+        buf = malloc(bufsize);
+        buf[0] = root->type;
+        buf[1] = root->name_length >> 8; /* Big endian -> MSB first */
+        buf[2] = root->name_length & 0xff;
+        strncpy((char *)&buf[3], root->name, root->name_length);
+    } else if (named) { /* root->type == TAG_End */
+        /* TAG_End has an ID, but no length or name */
+        buf = malloc(1);
+        buf[0] = NBT_TAG_End;
+        bufsize++;
+    }
+    uint32_t init_bufsize;
+    switch (root->type) {
+        case NBT_TAG_Byte:
+            bufsize++;
+            buf = realloc(buf, bufsize);
+            buf[bufsize-1] = root->payload.data_byte;
+            break;
+        case NBT_TAG_Short:
+            bufsize += 2;
+            buf = realloc(buf, bufsize);
+            buf[bufsize-2] = root->payload.data_short >> 8; /* Big Endian */
+            buf[bufsize-1] = root->payload.data_short & 0xff;
+            break;
+        case NBT_TAG_Int:
+            bufsize += 4;
+            buf = realloc(buf, bufsize);
+            buf[bufsize-4] = root->payload.data_int >> 24; /* Big Endian */
+            buf[bufsize-3] = (root->payload.data_int >> 16) & 0xff;
+            buf[bufsize-2] = (root->payload.data_int >> 8) & 0xff;
+            buf[bufsize-1] = root->payload.data_int & 0xff;
+            break;
+        case NBT_TAG_Long:
+            bufsize += 8;
+            buf = realloc(buf, bufsize);
+            for (int i = 8; i > 0; i--) {
+                buf[bufsize-i] = (root->payload.data_long >> ((i-1)*8)) & 0xff;
+            }
+            break;
+        case NBT_TAG_Float:
+            bufsize += 4;
+            buf = realloc(buf, bufsize);
+            float fdata = root->payload.data_float;
+            /* No strict aliasing allowed */
+            uint32_t f_as_int = *((uint32_t *)&fdata);
+            buf[bufsize-4] = f_as_int >> 24; /* Big Endian */
+            buf[bufsize-3] = (f_as_int >> 16) & 0xff;
+            buf[bufsize-2] = (f_as_int >> 8) & 0xff;
+            buf[bufsize-1] = f_as_int & 0xff;
+            break;
+        case NBT_TAG_Double:
+            bufsize += 8;
+            buf = realloc(buf, bufsize);
+            double ddata = root->payload.data_double;
+            uint64_t d_as_long = *((uint64_t *)&ddata);
+            for (int i = 8; i > 0; i--) {
+                buf[bufsize-i] = (d_as_long >> ((i-1)*8)) & 0xff;
+            }
+            break;
+        case NBT_TAG_String:
+            init_bufsize = bufsize;
+            bufsize += 2 + root->payload.data_string.size;
+            buf = realloc(buf, bufsize);
+            buf[init_bufsize] = root->payload.data_string.size >> 8;
+            buf[init_bufsize + 1] = root->payload.data_string.size & 0xff;
+            strncpy((char *)&buf[init_bufsize + 2], root->payload.data_string.data, root->payload.data_string.size);
+            break;
+        case NBT_TAG_Byte_Array:
+            init_bufsize = bufsize;
+            bufsize += 4 + root->payload.data_byte_array.size;
+            buf = realloc(buf, bufsize);
+            buf[init_bufsize] = root->payload.data_byte_array.size >> 24; /* Big Endian */
+            buf[init_bufsize + 1] = (root->payload.data_byte_array.size >> 16) & 0xff;
+            buf[init_bufsize + 2] = (root->payload.data_byte_array.size >> 8) & 0xff;
+            buf[init_bufsize + 3] = root->payload.data_byte_array.size & 0xff;
+            memcpy(&buf[init_bufsize+4], root->payload.data_byte_array.data, root->payload.data_byte_array.size);
+            break;
+        case NBT_TAG_List:
+            init_bufsize = bufsize;
+            /* content tagid */
+            bufsize += 1;
+            buf = realloc(buf, bufsize);
+            buf[init_bufsize] = root->payload.data_list.content_tagid;
+        case NBT_TAG_Int_Array:
+        case NBT_TAG_Long_Array:
+            init_bufsize = bufsize;
+            /* length */
+            bufsize += 4;
+            buf = realloc(buf, bufsize);
+            buf[init_bufsize] = root->payload.data_list.used_size >> 24; /* Big Endian */
+            buf[init_bufsize + 1] = (root->payload.data_list.used_size >> 16) & 0xff;
+            buf[init_bufsize + 2] = (root->payload.data_list.used_size >> 8) & 0xff;
+            buf[init_bufsize + 3] = root->payload.data_list.used_size & 0xff;
+            /* payloads*/
+            for (int i = 0; i < root->payload.data_list.used_size; i++) {
+                length_buffer_t *serialized_child = serialize_nbt(root->payload.data_list.contents[i], false);
+                init_bufsize = bufsize;
+                bufsize += serialized_child->length;
+                buf = realloc(buf, bufsize);
+                memcpy(&buf[init_bufsize], serialized_child->buffer, serialized_child->length);
+                free(serialized_child->buffer);
+                free(serialized_child);
+            }
+            break;
+        case NBT_TAG_Compound:
+            /* payloads*/
+            for (int i = 0; i < root->payload.data_list.used_size; i++) {
+                length_buffer_t *serialized_child = serialize_nbt(root->payload.data_list.contents[i], true);
+                init_bufsize = bufsize;
+                bufsize += serialized_child->length;
+                buf = realloc(buf, bufsize);
+                memcpy(&buf[init_bufsize], serialized_child->buffer, serialized_child->length);
+                free(serialized_child->buffer);
+                free(serialized_child);
+            }
+            /* add TAG_End */
+            buf = realloc(buf, bufsize + 1);
+            buf[bufsize++] = 0x00;
+            break;
+        default:
+            break;
+    }
+    lbuf->buffer = buf;
+    lbuf->length = bufsize;
+    return lbuf;
+}
+
+void free_nbt_node(nbt_node_t *node, bool free_children) {
+    if (node->type == NBT_TAG_List || node->type == NBT_TAG_Compound
+            || node->type == NBT_TAG_Int_Array || node->type == NBT_TAG_Long_Array) {
+        if (free_children) {
+            /* Free all children */
+            for (int i = 0; i < node->payload.data_list.used_size; i++) {
+                free_nbt_node(node->payload.data_list.contents[i], free_children);
+            }
+        }
+        free(node->payload.data_list.contents);
+    }
+    free(node);
+}
+
+int main() {
+    reset_all_settings();
+    nbt_node_t *c = new_nbt_compound("test_root");
+    nbt_node_t *c2 = new_nbt_compound("test_inner");
+    nbt_node_t *n1 = new_nbt_byte("test_byte", 0xff);
+    nbt_node_t *n2 = new_nbt_short("test_short", 0xabcd);
+    nbt_node_t *n3 = new_nbt_int("test_int", 0x9876);
+    nbt_node_t *n4 = new_nbt_long("test_long", 0xdcba4321);
+    nbt_node_t *n5 = new_nbt_float("test_float", 3.141592653f);
+    nbt_node_t *n6 = new_nbt_double("test_double", 3.141592653589793);
+    uint8_t test_buf[6] = {0x12, 0x34, 0x56, 0x67, 0x89, 0xab};
+    nbt_node_t *n7 = new_nbt_byte_array("test_byte_array", test_buf, 6);
+    nbt_node_t *n8 = new_nbt_list("test_list_int", NBT_TAG_Int_Array);
+    nbt_node_t *n9 = new_nbt_int_array("test_int_arr");
+    nbt_node_t *n10 = new_nbt_long_array("test_long_arr");
+    
+    nbt_node_t *i1 = new_nbt_int("", 10);
+    nbt_node_t *i2 = new_nbt_int("", 20);
+    nbt_node_t *i3 = new_nbt_int("", 42);
+    nbt_node_t *i4 = new_nbt_int("", 69);
+    nbt_node_t *i5 = new_nbt_int("", -9999);
+    nbt_append_to_list(n9, i1);
+    nbt_append_to_list(n9, i2);
+    nbt_append_to_list(n9, i3);
+    nbt_append_to_list(n9, i4);
+    nbt_append_to_list(n9, i5);
+
+    nbt_node_t *l1 = new_nbt_long("", 10);
+    nbt_node_t *l2 = new_nbt_long("", 20);
+    nbt_node_t *l3 = new_nbt_long("", 42);
+    nbt_node_t *l4 = new_nbt_long("", 69);
+    nbt_node_t *l5 = new_nbt_long("", -9999);
+    nbt_append_to_list(n10, l1);
+    nbt_append_to_list(n10, l2);
+    nbt_append_to_list(n10, l3);
+    nbt_append_to_list(n10, l4);
+    nbt_append_to_list(n10, l5);
+
+    nbt_append_to_list(n8, n9);
+    nbt_append_to_list(n8, n9);
+
+    nbt_append_to_list(c, n1);
+    nbt_append_to_list(c, n2);
+    nbt_append_to_list(c, n3);
+    nbt_append_to_list(c, n4);
+    nbt_append_to_list(c, c2);
+    nbt_append_to_list(c2, n5);
+    nbt_append_to_list(c2, n6);
+    nbt_append_to_list(c2, n7);
+    nbt_append_to_list(c2, n8);
+    nbt_append_to_list(c2, n10);
+
+    length_buffer_t *s = serialize_nbt(c, true);
+    char s_bytes[1024];
+    for (int i = 0; i < s->length; i++) {
+        uint8_t byte = s->buffer[i];
+        sprintf(&s_bytes[3*i], "%02x ", byte & 0xff);
+    }
+    DLINFO("Generated serial:\n'%s'", s_bytes);
+
+    const char *fp = "test.nbt";
+    DLINFO("Writing to file %s...", fp);
+    FILE *file = fopen(fp, "wb");
+    fwrite(s->buffer, 1, s->length, file);
+    fclose(file);
+
+    free(s->buffer);
+    free(s);
+    free_nbt_node(c, false);
+    free_nbt_node(c2, false);
+    free_nbt_node(n1, false);
+    free_nbt_node(n2, false);
+    free_nbt_node(n3, false);
+    free_nbt_node(n4, false);
+    free_nbt_node(n5, false);
+    free_nbt_node(n6, false);
+    free_nbt_node(n7, false);
+    free_nbt_node(n8, false);
+    free_nbt_node(n9, true);
+    free_nbt_node(n10, true);
+    return 0;
+}

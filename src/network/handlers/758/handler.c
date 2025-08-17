@@ -1,5 +1,11 @@
 #include "handler.h"
 
+//////////////////////
+////              ////
+////    STATUS    ////
+////              ////
+//////////////////////
+
 void *handle_status_758(mcsock_t *conn) {
     char *fnpath = "network.handlers.758.status";
     (void)(fnpath);
@@ -59,70 +65,40 @@ void *handle_status_758(mcsock_t *conn) {
     return NULL;
 }
 
-void send_disconnect_login(mcsock_t *conn, char *reason) {
-    /* Packet preparation */
-    packet_t *pack = new_packet(128);
-    pack->packet_id = PACKID_S2C_DISCONNECT_LOGIN;
-    
-    /* Fields */
-    mcsock_write_c_string(pack, reason);
-    
-    /* Send packet */
-    packet_send(pack, conn);
+/////////////////////
+////             ////
+////    LOGIN    ////
+////             ////
+/////////////////////
 
-    /* Cleanup */
-    free_packet(pack);
+void send_disconnect_login(mcsock_t *conn, char *reason) {
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_DISCONNECT_LOGIN, 128, {
+        ADD_FIELD_CSTRING(reason);
+    })
 }
 
 void send_encryption_request(mcsock_t *conn, uint32_t vtok) {
-    /* Packet preparation */
-    packet_t *pack = new_packet(2048);
-    pack->packet_id = PACKID_S2C_ENCRYPTION_REQUEST;
-    
-    /* Fields */
-    mcsock_write_c_string(pack, PROTOCOL_SERVER_ID);
-    keypair_t *kp = conn->server_keypair;
-    mcsock_write_varint(pack, kp->pkey_asn1_len);
-    mcsock_write_byte_array(pack, kp->pub_key_asn1, kp->pkey_asn1_len);
-    mcsock_write_varint(pack, 4);
-    mcsock_write_byte_array(pack, (uint8_t *)(&vtok), 4);
-    
-    /* Send packet */
-    packet_send(pack, conn);
-
-    /* Cleanup */
-    free_packet(pack);
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_ENCRYPTION_REQUEST, 2048, {
+        ADD_FIELD_CSTRING(PROTOCOL_SERVER_ID);
+        keypair_t *kp = conn->server_keypair;
+        ADD_FIELD_VARINT(kp->pkey_asn1_len);
+        ADD_FIELD_BYTE_ARR(kp->pub_key_asn1, kp->pkey_asn1_len);
+        ADD_FIELD_VARINT(4);
+        ADD_FIELD_BYTE_ARR((uint8_t *)(&vtok), 4);
+    })
 }
 
 void send_login_success(mcsock_t *conn, uuid_t uuid, char *username) {
-    /* Packet preparation */
-    packet_t *pack = new_packet(64);
-    pack->packet_id = PACKID_S2C_LOGIN_SUCCESS;
-    
-    /* Fields */
-    mcsock_write_uuid(pack, uuid);
-    mcsock_write_c_string(pack, username);
-    
-    /* Send packet */
-    packet_send(pack, conn);
-
-    /* Cleanup */
-    free_packet(pack);
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_LOGIN_SUCCESS, 64, {
+        ADD_FIELD_UUID(uuid);
+        ADD_FIELD_CSTRING(username);
+    })
 }
 
 void send_set_compression(mcsock_t *conn, uint32_t pack_size) {
-    /* Packet preparation */
-    packet_t *pack = new_packet(64);
-    pack->packet_id = PACKID_S2C_SET_COMPRESSION;
-    
-    /* Fields */
-    mcsock_write_varint(pack, pack_size);
-    
-    /* Send packet */
-    packet_send(pack, conn);
-
-    /* Cleanup */
-    free_packet(pack);
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_SET_COMPRESSION, 64, {
+        ADD_FIELD_VARINT(pack_size);
+    })
 }
 
 static void handle_state_play(mcsock_t *conn);
@@ -340,6 +316,67 @@ void *handle_play_758(mcsock_t *conn) {
     zmq_close(pair_sock);
 
     return NULL;
+}
+
+////////////////////
+////            ////
+////    PLAY    ////
+////            ////
+////////////////////
+
+void send_join_game(mcsock_t *conn) {
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_JOIN_GAME, 4096, {
+        /* Client ID is used as player EID as it is guaranteed to be unique */
+        ADD_FIELD_INT(conn->client_id);
+        ADD_FIELD_BOOL(false); // is hardcore = false
+        ADD_FIELD_UBYTE(1); // gamemode = creative
+        ADD_FIELD_BYTE(-1); // no previous gamemode
+        ADD_FIELD_VARINT(1); // world count
+        ADD_FIELD_CSTRING("crss:world"); // dimension name for dimension 0
+        /* Build Dimension Codec */
+        /* There is only one dimension, crss:world */
+        /* TODO: maybe make configurable */
+        nbt_node_t *dim_codec = new_nbt_compound("crss:dimension_codec");
+            nbt_node_t *dim_type = new_nbt_compound("minecraft:dimension_type");
+            nbt_append_to_list(dim_codec, dim_type);
+                nbt_node_t *dt_type = new_nbt_cstring("type", "minecraft:dimension_type");
+                nbt_append_to_list(dim_type, dt_type);
+                nbt_node_t *dt_value = new_nbt_list("value", NBT_TAG_Compound);
+                nbt_append_to_list(dim_type, dt_value);
+                    nbt_node_t *dtv_name = new_nbt_cstring("name", "crss:world");
+                    nbt_append_to_list(dt_value, dtv_name);
+                    nbt_node_t *dtv_id = new_nbt_int("id", 0);
+                    nbt_append_to_list(dt_value, dtv_id);
+                    nbt_node_t *dtv_elem = new_nbt_compound("element");
+                    nbt_append_to_list(dt_value, dtv_elem);
+                        nbt_append_to_list(dtv_elem, new_nbt_byte("piglin_safe", DIM_CODEC_PIGLIN_SAFE));
+                        nbt_append_to_list(dtv_elem, new_nbt_byte("natural", DIM_CODEC_NATURAL));
+                        nbt_append_to_list(dtv_elem, new_nbt_float("ambient_light", DIM_CODEC_AMBIENT_LIGHT));
+                        nbt_append_to_list(dtv_elem, new_nbt_long("fixed_time", DIM_CODEC_FIXED_TIME));
+                        nbt_append_to_list(dtv_elem, new_nbt_cstring("infiniburn", DIM_CODEC_INFINIBURN));
+                        nbt_append_to_list(dtv_elem, new_nbt_byte("respawn_anchor_works", DIM_CODEC_RESPAWN_ANCHOR_WORKS));
+                        nbt_append_to_list(dtv_elem, new_nbt_byte("has_skylight", DIM_CODEC_HAS_SKYLIGHT));
+                        nbt_append_to_list(dtv_elem, new_nbt_byte("bed_works", DIM_CODEC_BED_WORKS));
+                        nbt_append_to_list(dtv_elem, new_nbt_cstring("effects", DIM_CODEC_EFFECTS));
+                        nbt_append_to_list(dtv_elem, new_nbt_byte("has_raids", DIM_CODEC_HAS_RAIDS));
+                        nbt_append_to_list(dtv_elem, new_nbt_int("min_y", DIM_CODEC_MIN_Y));
+                        nbt_append_to_list(dtv_elem, new_nbt_int("height", DIM_CODEC_HEIGHT));
+                        nbt_append_to_list(dtv_elem, new_nbt_int("logical_height", DIM_CODEC_LOGICAL_HEIGHT));
+                        nbt_append_to_list(dtv_elem, new_nbt_double("coordinate_scale", DIM_CODEC_COORDINATE_SCALE));
+                        nbt_append_to_list(dtv_elem, new_nbt_byte("ultrawarm", DIM_CODEC_ULTRAWARM));
+                        nbt_append_to_list(dtv_elem, new_nbt_byte("has_ceiling", DIM_CODEC_HAS_CEILING));
+            nbt_node_t *worldgen_biome = new_nbt_compound("minecraft:worldgen/biome");
+            nbt_append_to_list(dim_codec, worldgen_biome);
+        ADD_FIELD_CSTRING("crss:world"); // dimension being spawned into
+        ADD_FIELD_LONG(0x5feceb66ffc86f38L); // First 8 bytes of hashed world seed (sha256 hash of 0)
+        ADD_FIELD_VARINT(0); // (deprecated) max players
+        ADD_FIELD_VARINT(20); // View distance; TODO: make configurable
+        ADD_FIELD_VARINT(6); // Simulation distance
+        ADD_FIELD_BOOL(false); // Reduced Debug Info
+        ADD_FIELD_BOOL(false); // enable respawn screen
+        ADD_FIELD_BOOL(false); // is debug world
+        ADD_FIELD_BOOL(true); // is flat
+    })
 }
 
 static void handle_state_play(mcsock_t *conn) {

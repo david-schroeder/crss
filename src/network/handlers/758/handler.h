@@ -14,7 +14,7 @@ Minecraft protocol handler for PVN 758 (Minecraft 1.18.2).
 
 #include <zmq.h>
 
-/* Packet IDs for Login/Play state */
+/* Packet IDs for Login state */
 
 // S->C
 #define PACKID_S2C_DISCONNECT_LOGIN (0x00)
@@ -25,6 +25,13 @@ Minecraft protocol handler for PVN 758 (Minecraft 1.18.2).
 // C->S
 #define PACKID_C2S_LOGIN_START (0x00)
 #define PACKID_C2S_ENCRYPTION_RESPONSE (0x01)
+
+/* Packet IDs for Play state */
+
+// S->C
+#define PACKID_S2C_JOIN_GAME (0x26)
+
+// C->S
 
 /*
 Communicate with client until end of exchange (EOX) upon a transition to the status state.

@@ -40,5 +40,87 @@ bool string_to_uuid(char *str, uuid_t *uuid);
 
 int uuidcmp(uuid_t *a, uuid_t *b);
 
+/*
+NBT
+*/
+
+typedef struct nbt_node_ {
+    uint8_t type;
+    uint16_t name_length;
+    char *name;
+    union {
+        int8_t data_byte;
+        int16_t data_short;
+        int32_t data_int;
+        int64_t data_long;
+        float data_float;
+        double data_double;
+        struct {
+            int32_t size;
+            uint8_t *data;
+        } data_byte_array;
+        struct {
+            uint16_t size;
+            char *data;
+        } data_string;
+        struct { /* Used for List, Compound, Int array and Long array */
+            uint8_t content_tagid;
+            uint32_t size;
+            uint32_t used_size;
+            struct nbt_node_ **contents; /* Array of pointers to child objects */
+        } data_list;
+    } payload;
+} nbt_node_t;
+
+typedef struct {
+    size_t length;
+    uint8_t *buffer;
+} length_buffer_t;
+
+#define NBT_TAG_End 0x00
+#define NBT_TAG_Byte 0x01
+#define NBT_TAG_Short 0x02
+#define NBT_TAG_Int 0x03
+#define NBT_TAG_Long 0x04
+#define NBT_TAG_Float 0x05
+#define NBT_TAG_Double 0x06
+#define NBT_TAG_Byte_Array 0x07
+#define NBT_TAG_String 0x08
+#define NBT_TAG_List 0x09
+#define NBT_TAG_Compound 0x0A
+#define NBT_TAG_Int_Array 0x0B
+#define NBT_TAG_Long_Array 0x0C
+
+nbt_node_t *new_nbt_node(uint8_t type, char *name);
+
+nbt_node_t *new_nbt_byte(char *name, int8_t value);
+
+nbt_node_t *new_nbt_short(char *name, int16_t value);
+
+nbt_node_t *new_nbt_int(char *name, int32_t value);
+
+nbt_node_t *new_nbt_long(char *name, int64_t value);
+
+nbt_node_t *new_nbt_float(char *name, float value);
+
+nbt_node_t *new_nbt_double(char *name, double value);
+
+nbt_node_t *new_nbt_byte_array(char *name, uint8_t *buf, uint32_t len);
+
+nbt_node_t *new_nbt_string(char *name, char *buf, uint32_t len);
+
+nbt_node_t *new_nbt_cstring(char *name, char *buf);
+
+nbt_node_t *new_nbt_list(char *name, uint8_t content_tagid);
+
+nbt_node_t *new_nbt_compound(char *name);
+
+void nbt_append_to_list(nbt_node_t *list, nbt_node_t *item);
+
+length_buffer_t *serialize_nbt(nbt_node_t *root, bool named);
+
+#define NBT_LIST_INIT_SIZE 8
+
+void free_nbt_node(nbt_node_t *node, bool free_children);
 
 #endif // CORETYPES_H

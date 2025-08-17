@@ -63,7 +63,7 @@ int run_network_master(char *ip, int port) {
     char pkey_bytes[1024];
     for (int i = 0; i < server_keypair->pkey_asn1_len; i++) {
         uint8_t byte = server_keypair->pub_key_asn1[i];
-        sprintf(&pkey_bytes[3*i], "%02x  ", byte & 0xff);
+        sprintf(&pkey_bytes[3*i], "%02x ", byte & 0xff);
     }
     LDEBUG("Generated public key:\n%s", pkey_bytes);
 
