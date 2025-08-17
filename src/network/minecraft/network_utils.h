@@ -2,7 +2,10 @@
 #define NETWORK_UTILS_H
 
 #include "utils.h"
+#include "../../core/coretypes.h"
+#include "../crypto.h"
 
+#include <curl/curl.h>
 #include <zmq.h>
 
 /*
@@ -76,6 +79,10 @@ typedef struct {
     int client_id;
     mcclient_state_e state;
     char *username;
+    keypair_t *server_keypair;
+    decrypted_buffer_t *shared_secret; // Buffer with length
+    EVP_CIPHER_CTX *s2c_ctx;
+    EVP_CIPHER_CTX *c2s_ctx;
 } mcsock_t;
 
 pairsock_op_t *client_pair_recv(void *sock);
@@ -114,6 +121,8 @@ int32_t mcsock_read_varint(packet_t *s);
 
 int64_t mcsock_read_varlong(packet_t *s);
 
+uint8_t *mcsock_read_byte_array(packet_t *s, uint32_t len);
+
 void mcsock_write_bool(packet_t *p, bool value);
 
 void mcsock_write_byte(packet_t *p, int8_t value);
@@ -134,10 +143,25 @@ void mcsock_write_double(packet_t *p, double value);
 
 void mcsock_write_string(packet_t *p, mcstring_t *string);
 
+/* Same as `mcsock_write_string`, but works with a standard `char*` */
+void mcsock_write_c_string(packet_t *p, char *str);
+
 void mcsock_write_identifier(packet_t *p, mcstring_t *identifier);
 
 void mcsock_write_varint(packet_t *p, int32_t value);
 
 void mcsock_write_varlong(packet_t *p, int64_t value);
+
+void mcsock_write_uuid(packet_t *p, uuid_t uuid);
+
+void mcsock_write_byte_array(packet_t *p, uint8_t *array, uint32_t len);
+
+/*
+Generate MC-style Hex Digest String from SHA1 hex digest
+Overwrites data in `digest` iff MSB of digest is set
+*/
+mcstring_t *gen_mc_hexdigest(uint8_t *digest, uint32_t len);
+
+mcstring_t *get_request(char *url);
 
 #endif // NETWORK_UTILS_H

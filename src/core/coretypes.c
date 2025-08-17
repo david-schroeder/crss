@@ -2,18 +2,20 @@
 
 void set_uuid_from_uint32(uuid_t *uuid, uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
     uint32_t *uuid_uints = (uint32_t *)uuid;
-    uuid_uints[0] = a;
-    uuid_uints[1] = b;
-    uuid_uints[2] = c;
-    uuid_uints[3] = d;
+    /* For ordering see notes in header file */
+    uuid_uints[3] = a;
+    uuid_uints[2] = b;
+    uuid_uints[1] = c;
+    uuid_uints[0] = d;
 }
 
 void get_uuid_as_uint32(uuid_t *uuid, uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d) {
     uint32_t *uuid_uints = (uint32_t *)uuid;
-    *a = uuid_uints[0];
-    *b = uuid_uints[1];
-    *c = uuid_uints[2];
-    *d = uuid_uints[3];
+    /* For ordering see notes in header file */
+    *a = uuid_uints[3];
+    *b = uuid_uints[2];
+    *c = uuid_uints[1];
+    *d = uuid_uints[0];
 }
 
 void copy_uuid(uuid_t *dest, uuid_t *src) {
@@ -57,7 +59,7 @@ bool string_to_uuid(char *str, uuid_t *uuid) {
         return false;
     }
     
-    /* Special case: Last 12 digits are one block, so split them up into 4+12*/
+    /* Special case: Last 12 digits are one block, so split them up into 4+8 */
     char c_lower[5];
     for (int i = 0; i < 4; i++) c_lower[i] = str[24+i];
     c_lower[4] = '\0';

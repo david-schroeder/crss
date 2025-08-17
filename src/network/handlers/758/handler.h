@@ -7,9 +7,24 @@ Minecraft protocol handler for PVN 758 (Minecraft 1.18.2).
 
 #include "utils.h"
 #include "resources.h"
+#include "ctconfig.h"
 #include "../../minecraft/network_utils.h"
+#include "../../crypto.h"
+#include "../../../core/coretypes.h"
 
 #include <zmq.h>
+
+/* Packet IDs for Login/Play state */
+
+// S->C
+#define PACKID_S2C_DISCONNECT_LOGIN (0x00)
+#define PACKID_S2C_ENCRYPTION_REQUEST (0x01)
+#define PACKID_S2C_LOGIN_SUCCESS (0x02)
+#define PACKID_S2C_SET_COMPRESSION (0x03)
+
+// C->S
+#define PACKID_C2S_LOGIN_START (0x00)
+#define PACKID_C2S_ENCRYPTION_RESPONSE (0x01)
 
 /*
 Communicate with client until end of exchange (EOX) upon a transition to the status state.

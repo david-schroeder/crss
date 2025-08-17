@@ -1,4 +1,4 @@
-CFLAGS		:= -std=c23 -Wall -Werror -Wno-unused-command-line-argument -fsanitize=address -fno-strict-aliasing -g -O0 -D DEBUG -Ilib -lpthread `pkg-config gtk4 libzmq epoxy --cflags --libs`
+CFLAGS		:= -std=c23 -Wall -Werror -Wno-unused-command-line-argument -fsanitize=address -fno-strict-aliasing -g -O0 -D DEBUG -Ilib -lpthread `pkg-config gtk4 libzmq epoxy openssl libcurl --cflags --libs`
 CC			:= clang
 OBJFILES    := build/rss-server.o \
 				build/version.o \
@@ -12,6 +12,7 @@ OBJFILES    := build/rss-server.o \
 				build/gui/gui.o \
 				build/gui/resources.o \
 				build/gui/crss_gl.o \
+				build/network/crypto.o \
 				build/network/network.o \
 				build/network/minecraft/network_utils.o \
 				build/network/handlers/758/handler.o \
@@ -35,11 +36,11 @@ build:
 	mkdir -p $@
 
 resources:
-	glib-compile-resources src/gui/crss.gresource.xml --generate-source --generate --sourcedir=src/gui --target=src/gui/resources.c
+	@glib-compile-resources src/gui/crss.gresource.xml --generate-source --generate --sourcedir=src/gui --target=src/gui/resources.c
 
 build/%.o: src/%.c | build
 	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) -c -o $@ $^
+	@$(CC) $(CFLAGS) -c -o $@ $<;
 
 clean:
 	rm -rf build

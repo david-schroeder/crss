@@ -57,6 +57,17 @@ static void *dispatch(mcsock_t *conn) {
 int run_network_master(char *ip, int port) {
     char *fnpath = "network";
 
+    /* Generate Keypair */
+    LINFO("Generating keypair...");
+    keypair_t *server_keypair = gen_keypair();
+    char pkey_bytes[1024];
+    for (int i = 0; i < server_keypair->pkey_asn1_len; i++) {
+        uint8_t byte = server_keypair->pub_key_asn1[i];
+        sprintf(&pkey_bytes[3*i], "%02x  ", byte & 0xff);
+    }
+    LDEBUG("Generated public key:\n%s", pkey_bytes);
+
+    /* Server */
     int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
@@ -142,6 +153,10 @@ int run_network_master(char *ip, int port) {
             conn->client_id = client_id++;
             conn->state = CL_HANDSHAKING;
             conn->username = NULL;
+            conn->server_keypair = server_keypair;
+            conn->shared_secret = NULL;
+            conn->s2c_ctx = NULL;
+            conn->c2s_ctx = NULL;
 
             /* Add to CTB */
             if (ctb_used == ctb_size) {
@@ -165,6 +180,7 @@ int run_network_master(char *ip, int port) {
             if (ctb[i].conn->state == CL_TERMINATED) {
                 if (ctb[i].conn->username) {
                     LDEBUG("Client thread for player %s has terminated!", ctb[i].conn->username);
+                    free(ctb[i].conn->username);
                 } else {
                     LDEBUG("Client %d has terminated!", ctb[i].conn->client_id);
                 }
@@ -216,6 +232,10 @@ int run_network_master(char *ip, int port) {
 
     LINFO("Freeing socket!!!!");
     CMD_HANDLER_CLEANUP();
+
+    EVP_PKEY_free(server_keypair->pkey);
+    free(server_keypair->pub_key_asn1);
+    free(server_keypair);
 
     return exit_code;
 }

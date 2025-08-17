@@ -5,6 +5,8 @@
 #include "utils.h"
 #include "internals.h"
 
+#include "crypto.h"
+
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/socket.h>
