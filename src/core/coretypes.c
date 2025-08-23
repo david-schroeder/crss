@@ -1,4 +1,5 @@
 #include "coretypes.h"
+#include "ctconfig.h"
 
 void set_uuid_from_uint32(uuid_t *uuid, uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
     uint32_t *uuid_uints = (uint32_t *)uuid;
@@ -195,11 +196,18 @@ void nbt_append_to_list(nbt_node_t *list, nbt_node_t *item) {
 
 /* Convert `root` into an NBT byte representation */
 /* @param named Whether the node is the value of a key-value pair, i.e. the child of a compound */
-length_buffer_t *serialize_nbt(nbt_node_t *root, bool named) {
+length_buffer_t *serialize_nbt(nbt_node_t *root, bool named, bool is_root) {
     length_buffer_t *lbuf = malloc(sizeof(length_buffer_t));
     uint32_t bufsize = 0;
     uint8_t *buf = NULL;
-    if (named && root->type != NBT_TAG_End) {
+    if (is_root) {
+        bufsize = 2 + root->name_length;
+        buf = malloc(bufsize);
+        buf[0] = root->name_length > 8;
+        buf[1] = root->name_length & 0xff;
+        strncpy((char *)&buf[2], root->name, root->name_length);
+
+    } else if (named && root->type != NBT_TAG_End) {
         /* Place ID + 2-byte length and node name inside buf */
         bufsize = 3 + root->name_length;
         buf = malloc(bufsize);
@@ -207,10 +215,10 @@ length_buffer_t *serialize_nbt(nbt_node_t *root, bool named) {
         buf[1] = root->name_length >> 8; /* Big endian -> MSB first */
         buf[2] = root->name_length & 0xff;
         strncpy((char *)&buf[3], root->name, root->name_length);
-    } else if (named) { /* root->type == TAG_End */
-        /* TAG_End has an ID, but no length or name */
+    } else if (named) { /* root->type == TAG_End or TAG_Compound */
+        /* TAG_End, TAG_Compound have an ID, but no length or name */
         buf = malloc(1);
-        buf[0] = NBT_TAG_End;
+        buf[0] = root->type;
         bufsize++;
     }
     uint32_t init_bufsize;
@@ -297,7 +305,7 @@ length_buffer_t *serialize_nbt(nbt_node_t *root, bool named) {
             buf[init_bufsize + 3] = root->payload.data_list.used_size & 0xff;
             /* payloads*/
             for (int i = 0; i < root->payload.data_list.used_size; i++) {
-                length_buffer_t *serialized_child = serialize_nbt(root->payload.data_list.contents[i], false);
+                length_buffer_t *serialized_child = serialize_nbt(root->payload.data_list.contents[i], false, false);
                 init_bufsize = bufsize;
                 bufsize += serialized_child->length;
                 buf = realloc(buf, bufsize);
@@ -309,7 +317,7 @@ length_buffer_t *serialize_nbt(nbt_node_t *root, bool named) {
         case NBT_TAG_Compound:
             /* payloads*/
             for (int i = 0; i < root->payload.data_list.used_size; i++) {
-                length_buffer_t *serialized_child = serialize_nbt(root->payload.data_list.contents[i], true);
+                length_buffer_t *serialized_child = serialize_nbt(root->payload.data_list.contents[i], true, false);
                 init_bufsize = bufsize;
                 bufsize += serialized_child->length;
                 buf = realloc(buf, bufsize);
@@ -343,7 +351,7 @@ void free_nbt_node(nbt_node_t *node, bool free_children) {
     free(node);
 }
 
-int main() {
+int nbt_main() {
     reset_all_settings();
     nbt_node_t *c = new_nbt_compound("test_root");
     nbt_node_t *c2 = new_nbt_compound("test_inner");
@@ -395,7 +403,7 @@ int main() {
     nbt_append_to_list(c2, n8);
     nbt_append_to_list(c2, n10);
 
-    length_buffer_t *s = serialize_nbt(c, true);
+    length_buffer_t *s = serialize_nbt(c, true, true);
     char s_bytes[1024];
     for (int i = 0; i < s->length; i++) {
         uint8_t byte = s->buffer[i];
@@ -423,5 +431,88 @@ int main() {
     free_nbt_node(n8, false);
     free_nbt_node(n9, true);
     free_nbt_node(n10, true);
+    return 0;
+}
+
+int nbt_main2() {
+    reset_all_settings();
+
+    nbt_node_t *dim_codec = new_nbt_compound("crss.dimension_codec");
+            nbt_node_t *dim_type = new_nbt_compound("dimension_type");
+            nbt_append_to_list(dim_codec, dim_type);
+                nbt_node_t *dt_type = new_nbt_cstring("type", "minecraft:dimension_type");
+                nbt_append_to_list(dim_type, dt_type);
+                nbt_node_t *dt_value = new_nbt_list("value", NBT_TAG_Compound);
+                nbt_append_to_list(dim_type, dt_value);
+                    nbt_node_t *dim = new_nbt_compound("crss:world");
+                    nbt_append_to_list(dt_value, dim);
+                        nbt_node_t *dtv_name = new_nbt_cstring("name", "crss:world");
+                        nbt_append_to_list(dim, dtv_name);
+                        nbt_node_t *dtv_id = new_nbt_int("id", 0);
+                        nbt_append_to_list(dim, dtv_id);
+                        nbt_node_t *dtv_elem = new_nbt_compound("element");
+                        nbt_append_to_list(dim, dtv_elem);
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("piglin_safe", DIM_CODEC_PIGLIN_SAFE));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("natural", DIM_CODEC_NATURAL));
+                            nbt_append_to_list(dtv_elem, new_nbt_float("ambient_light", DIM_CODEC_AMBIENT_LIGHT));
+                            nbt_append_to_list(dtv_elem, new_nbt_long("fixed_time", DIM_CODEC_FIXED_TIME));
+                            nbt_append_to_list(dtv_elem, new_nbt_cstring("infiniburn", DIM_CODEC_INFINIBURN));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("respawn_anchor_works", DIM_CODEC_RESPAWN_ANCHOR_WORKS));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("has_skylight", DIM_CODEC_HAS_SKYLIGHT));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("bed_works", DIM_CODEC_BED_WORKS));
+                            nbt_append_to_list(dtv_elem, new_nbt_cstring("effects", DIM_CODEC_EFFECTS));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("has_raids", DIM_CODEC_HAS_RAIDS));
+                            nbt_append_to_list(dtv_elem, new_nbt_int("min_y", DIM_CODEC_MIN_Y));
+                            nbt_append_to_list(dtv_elem, new_nbt_int("height", DIM_CODEC_HEIGHT));
+                            nbt_append_to_list(dtv_elem, new_nbt_int("logical_height", DIM_CODEC_LOGICAL_HEIGHT));
+                            nbt_append_to_list(dtv_elem, new_nbt_double("coordinate_scale", DIM_CODEC_COORDINATE_SCALE));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("ultrawarm", DIM_CODEC_ULTRAWARM));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("has_ceiling", DIM_CODEC_HAS_CEILING));
+            nbt_node_t *worldgen_biome = new_nbt_compound("worldgen/biome");
+            nbt_append_to_list(dim_codec, worldgen_biome);
+                nbt_node_t *wb_type = new_nbt_cstring("type", "minecraft:worldgen/biome");
+                nbt_append_to_list(worldgen_biome, wb_type);
+                nbt_node_t *wb_value = new_nbt_list("value", NBT_TAG_Compound);
+                nbt_append_to_list(worldgen_biome, wb_value);
+                    /* Biome: Plot */
+                    nbt_node_t *biome = new_nbt_compound("crss:plot");
+                    nbt_append_to_list(wb_value, biome);
+                        nbt_node_t *wbv_name = new_nbt_cstring("name", "crss:plot");
+                        nbt_append_to_list(biome, wbv_name);
+                        nbt_node_t *wbv_id = new_nbt_int("id", 0);
+                        nbt_append_to_list(biome, wbv_id);
+                        nbt_node_t *wbv_elem = new_nbt_compound("element");
+                        nbt_append_to_list(biome, wbv_elem);
+                            nbt_append_to_list(wbv_elem, new_nbt_cstring("precipitation", "none"));
+                            nbt_append_to_list(wbv_elem, new_nbt_float("depth", 0.0));
+                            nbt_append_to_list(wbv_elem, new_nbt_float("temperature", 0.8));
+                            nbt_append_to_list(wbv_elem, new_nbt_float("scale", 1.0));
+                            nbt_append_to_list(wbv_elem, new_nbt_float("downfall", 0.0));
+                            nbt_append_to_list(wbv_elem, new_nbt_cstring("category", "plains"));
+                            nbt_node_t *wbv_effects = new_nbt_compound("effects");
+                            nbt_append_to_list(wbv_elem, wbv_effects);
+                                nbt_append_to_list(wbv_effects, new_nbt_int("sky_color", 0x7FA1FF));
+                                nbt_append_to_list(wbv_effects, new_nbt_int("water_fog_color", 0x7FA1FF));
+                                nbt_append_to_list(wbv_effects, new_nbt_int("fog_color", 0x7FA1FF));
+                                nbt_append_to_list(wbv_effects, new_nbt_int("water_color", 0x7FA1FF));
+
+    length_buffer_t *s = serialize_nbt(dim_codec, true, true);
+    free_nbt_node(dim_codec, true);
+    char s_bytes[8192];
+    for (int i = 0; i < s->length; i++) {
+        uint8_t byte = s->buffer[i];
+        sprintf(&s_bytes[3*i], "%02x ", byte & 0xff);
+    }
+    DLINFO("Generated serial:\n'%s'", s_bytes);
+
+    const char *fp = "test.nbt";
+    DLINFO("Writing to file %s...", fp);
+    FILE *file = fopen(fp, "wb");
+    fwrite(s->buffer, 1, s->length, file);
+    fclose(file);
+
+    free(s->buffer);
+    free(s);
+
     return 0;
 }

@@ -1,5 +1,7 @@
 #include "handler.h"
 
+//#define ENCRYPTED
+
 //////////////////////
 ////              ////
 ////    STATUS    ////
@@ -140,7 +142,8 @@ void *handle_play_758(mcsock_t *conn) {
         conn->username[username->length] = '\0';
         free_mcstring(username);
     })
-    
+
+    #ifdef ENCRYPTED
     ////////////////
     // ENCRYPTION //
     ////////////////
@@ -266,6 +269,24 @@ void *handle_play_758(mcsock_t *conn) {
     sprintf(auth_url, "https://sessionserver.mojang.com/session/minecraft/hasJoined?username=%s&serverId=%s", conn->username, mc_hexdigest->data);
     free_mcstring(mc_hexdigest);
     mcstring_t *auth_response = get_request(auth_url);
+    int auth_attempts = 0;
+    while (!auth_response && auth_attempts < 5) {
+        LDEBUG("Authentication GET request failed, retrying...");
+        auth_response = get_request(auth_url);
+        auth_attempts++;
+    }
+    if (!auth_response) {
+        /* Authentication failed too often, exit */
+        send_disconnect_login(conn, "{\"text\": \"Failed to authenticate\"}");
+        EVP_CIPHER_CTX_free(s2c_cipher_ctx);
+        EVP_CIPHER_CTX_free(c2s_cipher_ctx);
+        OPENSSL_free(decrypted_shared_secret->data);
+        free(decrypted_shared_secret);
+
+        close(conn->fd);
+        zmq_close(pair_sock);
+        return NULL;
+    }
     LVERBOSE("Response:\n%s", auth_response->data);
 
     /* Parse UUID from response */
@@ -300,17 +321,36 @@ void *handle_play_758(mcsock_t *conn) {
     free_mcstring(auth_response);
     uuid_t resp_uuid_uuid;
     string_to_uuid(formatted_resp_uuid, &resp_uuid_uuid);
-    LDEBUG("Extracted UUID from response: %s", formatted_resp_uuid);
+
+    #else
+    uuid_t resp_uuid_uuid;
+    /* The 3 indicates UUIDv3 */
+    set_uuid_from_uint32(&resp_uuid_uuid, 0xBEEFCAFE, 0x3000, 0, conn->client_id);
+    char *formatted_resp_uuid = uuid_to_string(&resp_uuid_uuid);
+    #endif
+
+    LDEBUG("%s's UUID: %s", conn->username, formatted_resp_uuid);
+
+    #ifndef ENCRYPTED /* formatted_resp_uuid is malloc'd iff offline-mode */
+    free(formatted_resp_uuid);
+    #endif
 
     send_login_success(conn, resp_uuid_uuid, conn->username);
+    copy_uuid(&conn->client_data.uuid, &resp_uuid_uuid);
 
     handle_state_play(conn);
 
+    if (conn->client_data.settings.locale) {
+        free(conn->client_data.settings.locale);
+    }
+
+    #ifdef ENCRYPTED
     /* Free Stream Ciphers + Shared Secret after connection is closed */
     EVP_CIPHER_CTX_free(s2c_cipher_ctx);
     EVP_CIPHER_CTX_free(c2s_cipher_ctx);
     OPENSSL_free(decrypted_shared_secret->data);
     free(decrypted_shared_secret);
+    #endif
 
     close(conn->fd);
     zmq_close(pair_sock);
@@ -324,6 +364,12 @@ void *handle_play_758(mcsock_t *conn) {
 ////            ////
 ////////////////////
 
+void send_disconnect_play(mcsock_t *conn, char *reason) {
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_DISCONNECT_PLAY, 128, {
+        ADD_FIELD_CSTRING(reason);
+    })
+}
+
 void send_join_game(mcsock_t *conn) {
     SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_JOIN_GAME, 4096, {
         /* Client ID is used as player EID as it is guaranteed to be unique */
@@ -336,37 +382,85 @@ void send_join_game(mcsock_t *conn) {
         /* Build Dimension Codec */
         /* There is only one dimension, crss:world */
         /* TODO: maybe make configurable */
-        nbt_node_t *dim_codec = new_nbt_compound("crss:dimension_codec");
-            nbt_node_t *dim_type = new_nbt_compound("minecraft:dimension_type");
+        nbt_node_t *dim_codec = new_nbt_compound("");
+            nbt_node_t *dim_type = new_nbt_compound("dimension_type");
             nbt_append_to_list(dim_codec, dim_type);
                 nbt_node_t *dt_type = new_nbt_cstring("type", "minecraft:dimension_type");
                 nbt_append_to_list(dim_type, dt_type);
                 nbt_node_t *dt_value = new_nbt_list("value", NBT_TAG_Compound);
                 nbt_append_to_list(dim_type, dt_value);
-                    nbt_node_t *dtv_name = new_nbt_cstring("name", "crss:world");
-                    nbt_append_to_list(dt_value, dtv_name);
-                    nbt_node_t *dtv_id = new_nbt_int("id", 0);
-                    nbt_append_to_list(dt_value, dtv_id);
-                    nbt_node_t *dtv_elem = new_nbt_compound("element");
-                    nbt_append_to_list(dt_value, dtv_elem);
-                        nbt_append_to_list(dtv_elem, new_nbt_byte("piglin_safe", DIM_CODEC_PIGLIN_SAFE));
-                        nbt_append_to_list(dtv_elem, new_nbt_byte("natural", DIM_CODEC_NATURAL));
-                        nbt_append_to_list(dtv_elem, new_nbt_float("ambient_light", DIM_CODEC_AMBIENT_LIGHT));
-                        nbt_append_to_list(dtv_elem, new_nbt_long("fixed_time", DIM_CODEC_FIXED_TIME));
-                        nbt_append_to_list(dtv_elem, new_nbt_cstring("infiniburn", DIM_CODEC_INFINIBURN));
-                        nbt_append_to_list(dtv_elem, new_nbt_byte("respawn_anchor_works", DIM_CODEC_RESPAWN_ANCHOR_WORKS));
-                        nbt_append_to_list(dtv_elem, new_nbt_byte("has_skylight", DIM_CODEC_HAS_SKYLIGHT));
-                        nbt_append_to_list(dtv_elem, new_nbt_byte("bed_works", DIM_CODEC_BED_WORKS));
-                        nbt_append_to_list(dtv_elem, new_nbt_cstring("effects", DIM_CODEC_EFFECTS));
-                        nbt_append_to_list(dtv_elem, new_nbt_byte("has_raids", DIM_CODEC_HAS_RAIDS));
-                        nbt_append_to_list(dtv_elem, new_nbt_int("min_y", DIM_CODEC_MIN_Y));
-                        nbt_append_to_list(dtv_elem, new_nbt_int("height", DIM_CODEC_HEIGHT));
-                        nbt_append_to_list(dtv_elem, new_nbt_int("logical_height", DIM_CODEC_LOGICAL_HEIGHT));
-                        nbt_append_to_list(dtv_elem, new_nbt_double("coordinate_scale", DIM_CODEC_COORDINATE_SCALE));
-                        nbt_append_to_list(dtv_elem, new_nbt_byte("ultrawarm", DIM_CODEC_ULTRAWARM));
-                        nbt_append_to_list(dtv_elem, new_nbt_byte("has_ceiling", DIM_CODEC_HAS_CEILING));
-            nbt_node_t *worldgen_biome = new_nbt_compound("minecraft:worldgen/biome");
+                    nbt_node_t *dim = new_nbt_compound("crss:world");
+                    nbt_append_to_list(dt_value, dim);
+                        nbt_node_t *dtv_name = new_nbt_cstring("name", "crss:world");
+                        nbt_append_to_list(dim, dtv_name);
+                        nbt_node_t *dtv_id = new_nbt_int("id", 0);
+                        nbt_append_to_list(dim, dtv_id);
+                        nbt_node_t *dtv_elem = new_nbt_compound("element");
+                        nbt_append_to_list(dim, dtv_elem);
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("piglin_safe", DIM_CODEC_PIGLIN_SAFE));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("natural", DIM_CODEC_NATURAL));
+                            nbt_append_to_list(dtv_elem, new_nbt_float("ambient_light", DIM_CODEC_AMBIENT_LIGHT));
+                            nbt_append_to_list(dtv_elem, new_nbt_long("fixed_time", DIM_CODEC_FIXED_TIME));
+                            nbt_append_to_list(dtv_elem, new_nbt_cstring("infiniburn", DIM_CODEC_INFINIBURN));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("respawn_anchor_works", DIM_CODEC_RESPAWN_ANCHOR_WORKS));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("has_skylight", DIM_CODEC_HAS_SKYLIGHT));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("bed_works", DIM_CODEC_BED_WORKS));
+                            nbt_append_to_list(dtv_elem, new_nbt_cstring("effects", DIM_CODEC_EFFECTS));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("has_raids", DIM_CODEC_HAS_RAIDS));
+                            nbt_append_to_list(dtv_elem, new_nbt_int("min_y", DIM_CODEC_MIN_Y));
+                            nbt_append_to_list(dtv_elem, new_nbt_int("height", DIM_CODEC_HEIGHT));
+                            nbt_append_to_list(dtv_elem, new_nbt_int("logical_height", DIM_CODEC_LOGICAL_HEIGHT));
+                            nbt_append_to_list(dtv_elem, new_nbt_double("coordinate_scale", DIM_CODEC_COORDINATE_SCALE));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("ultrawarm", DIM_CODEC_ULTRAWARM));
+                            nbt_append_to_list(dtv_elem, new_nbt_byte("has_ceiling", DIM_CODEC_HAS_CEILING));
+            nbt_node_t *worldgen_biome = new_nbt_compound("worldgen/biome");
             nbt_append_to_list(dim_codec, worldgen_biome);
+                nbt_node_t *wb_type = new_nbt_cstring("type", "minecraft:worldgen/biome");
+                nbt_append_to_list(worldgen_biome, wb_type);
+                nbt_node_t *wb_value = new_nbt_list("value", NBT_TAG_Compound);
+                nbt_append_to_list(worldgen_biome, wb_value);
+                    /* Biome: Plains */
+                    nbt_node_t *biome = new_nbt_compound("plains");
+                    nbt_append_to_list(wb_value, biome);
+                        nbt_node_t *wbv_name = new_nbt_cstring("name", "minecraft:plains");
+                        nbt_append_to_list(biome, wbv_name);
+                        nbt_node_t *wbv_id = new_nbt_int("id", 0);
+                        nbt_append_to_list(biome, wbv_id);
+                        nbt_node_t *wbv_elem = new_nbt_compound("element");
+                        nbt_append_to_list(biome, wbv_elem);
+                            nbt_append_to_list(wbv_elem, new_nbt_cstring("precipitation", "none"));
+                            nbt_append_to_list(wbv_elem, new_nbt_float("depth", 0.0));
+                            nbt_append_to_list(wbv_elem, new_nbt_float("temperature", 0.8));
+                            nbt_append_to_list(wbv_elem, new_nbt_float("scale", 1.0));
+                            nbt_append_to_list(wbv_elem, new_nbt_float("downfall", 0.0));
+                            nbt_append_to_list(wbv_elem, new_nbt_cstring("category", "plains"));
+                            nbt_node_t *wbv_effects = new_nbt_compound("effects");
+                            nbt_append_to_list(wbv_elem, wbv_effects);
+                                nbt_append_to_list(wbv_effects, new_nbt_int("sky_color", 0x7FA1FF));
+                                nbt_append_to_list(wbv_effects, new_nbt_int("water_fog_color", 0x7FA1FF));
+                                nbt_append_to_list(wbv_effects, new_nbt_int("fog_color", 0x7FA1FF));
+                                nbt_append_to_list(wbv_effects, new_nbt_int("water_color", 0x7FA1FF));
+        ADD_FIELD_NBT(dim_codec);
+        free_nbt_node(dim_codec, true);
+        nbt_node_t *dimension = new_nbt_compound("");
+            nbt_append_to_list(dimension, new_nbt_byte("piglin_safe", DIM_CODEC_PIGLIN_SAFE));
+            nbt_append_to_list(dimension, new_nbt_byte("natural", DIM_CODEC_NATURAL));
+            nbt_append_to_list(dimension, new_nbt_float("ambient_light", DIM_CODEC_AMBIENT_LIGHT));
+            nbt_append_to_list(dimension, new_nbt_long("fixed_time", DIM_CODEC_FIXED_TIME));
+            nbt_append_to_list(dimension, new_nbt_cstring("infiniburn", DIM_CODEC_INFINIBURN));
+            nbt_append_to_list(dimension, new_nbt_byte("respawn_anchor_works", DIM_CODEC_RESPAWN_ANCHOR_WORKS));
+            nbt_append_to_list(dimension, new_nbt_byte("has_skylight", DIM_CODEC_HAS_SKYLIGHT));
+            nbt_append_to_list(dimension, new_nbt_byte("bed_works", DIM_CODEC_BED_WORKS));
+            nbt_append_to_list(dimension, new_nbt_cstring("effects", DIM_CODEC_EFFECTS));
+            nbt_append_to_list(dimension, new_nbt_byte("has_raids", DIM_CODEC_HAS_RAIDS));
+            nbt_append_to_list(dimension, new_nbt_int("min_y", DIM_CODEC_MIN_Y));
+            nbt_append_to_list(dimension, new_nbt_int("height", DIM_CODEC_HEIGHT));
+            nbt_append_to_list(dimension, new_nbt_int("logical_height", DIM_CODEC_LOGICAL_HEIGHT));
+            nbt_append_to_list(dimension, new_nbt_double("coordinate_scale", DIM_CODEC_COORDINATE_SCALE));
+            nbt_append_to_list(dimension, new_nbt_byte("ultrawarm", DIM_CODEC_ULTRAWARM));
+            nbt_append_to_list(dimension, new_nbt_byte("has_ceiling", DIM_CODEC_HAS_CEILING));
+        ADD_FIELD_NBT(dimension);
+        free_nbt_node(dimension, true);
         ADD_FIELD_CSTRING("crss:world"); // dimension being spawned into
         ADD_FIELD_LONG(0x5feceb66ffc86f38L); // First 8 bytes of hashed world seed (sha256 hash of 0)
         ADD_FIELD_VARINT(0); // (deprecated) max players
@@ -379,6 +473,125 @@ void send_join_game(mcsock_t *conn) {
     })
 }
 
+void send_crss_brand(mcsock_t *conn) {
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_PLUGIN_MESSAGE, 64, {
+        ADD_FIELD_CSTRING("minecraft:brand");
+        ADD_FIELD_CSTRING(SOFTWARE_NAME);
+    })
+}
+
+void send_held_item_change(mcsock_t *conn, uint8_t slot) {
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_HELD_ITEM_CHANGE, 32, {
+        ADD_FIELD_BYTE(slot);
+    })
+}
+
+void send_update_player_pos_and_look(mcsock_t *conn) {
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_UPDATE_PLAYER_POS_AND_LOOK, 64, {
+        ADD_FIELD_DOUBLE(conn->client_data.x);
+        ADD_FIELD_DOUBLE(conn->client_data.y);
+        ADD_FIELD_DOUBLE(conn->client_data.z);
+        ADD_FIELD_FLOAT(conn->client_data.theta);
+        ADD_FIELD_FLOAT(conn->client_data.phi);
+        ADD_FIELD_BYTE(0); /* Flags */
+        ADD_FIELD_VARINT(0); /* Teleport ID */
+        ADD_FIELD_BOOL(false); /* Should dismount vehicle */
+    })
+}
+
+typedef enum {
+    ACT_ADD_PLAYER = 0,
+    ACT_UPDATE_GAMEMODE = 1,
+    ACT_UPDATE_LATENCY = 2,
+    ACT_UPDATE_DISPLAY_NAME = 3,
+    ACT_REMOVE_PLAYER = 4
+} player_info_action_e;
+
+void send_player_info(mcsock_t *conn, player_info_action_e action) {
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_PLAYER_INFO, 128, {
+        ADD_FIELD_VARINT(action);
+        /* TODO: use pair sock to get the right data */
+        /* TODO: different actions, this is just add player */
+        ADD_FIELD_VARINT(1); /* Number of players */
+        ADD_FIELD_UUID(conn->client_data.uuid);
+        ADD_FIELD_CSTRING(conn->username);
+        ADD_FIELD_VARINT(0); /* Number of properties */
+        ADD_FIELD_VARINT(0); /* Gamemode */
+        ADD_FIELD_VARINT(350); /* Ping */
+        ADD_FIELD_BOOL(false); /* Has display name */
+    })
+}
+
 static void handle_state_play(mcsock_t *conn) {
-    
+    char *fnpath = "network.handlers.758.play";
+    packet_t *pack;
+    send_join_game(conn);
+    send_crss_brand(conn);
+    pack = packet_recv(conn);
+    if (pack && pack->packet_id == PACKID_C2S_PLUGIN_MESSAGE) {
+        mcstring_t *channel = mcsock_read_string(pack);
+        char *channel_str = mcstring_to_cstring(channel);
+        if (strcmp(channel_str, "minecraft:brand") == 0) {
+            mcstring_t *brand = mcsock_read_string(pack);
+            char *brand_str = mcstring_to_cstring(brand);
+            LINFO("Client brand '%s'!", brand_str);
+            free(brand_str);
+        }
+        free(channel_str);
+        free_packet(pack);
+        pack = packet_recv(conn);
+    }
+    if (pack && pack->packet_id == PACKID_C2S_CLIENT_SETTINGS) {
+        mcstring_t *locale = mcsock_read_string(pack);
+        char *locale_str = mcstring_to_cstring(locale);
+        int8_t view_dist = mcsock_read_byte(pack);
+        uint32_t chat_mode = mcsock_read_varint(pack);
+        bool chat_colors = mcsock_read_bool(pack);
+        uint8_t skin_parts = mcsock_read_ubyte(pack);
+        uint32_t main_hand = mcsock_read_varint(pack);
+        bool enable_text_filtering = mcsock_read_bool(pack);
+        bool allow_server_listings = mcsock_read_bool(pack);
+        conn->client_data.settings.locale = locale_str;
+        conn->client_data.settings.view_dist = view_dist;
+        switch (chat_mode) {
+            case 2:
+                conn->client_data.settings.chat_mode = CL_CHAT_SETTINGS_HIDDEN;
+                break;
+            case 1:
+                conn->client_data.settings.chat_mode = CL_CHAT_SETTINGS_CMDONLY;
+                break;
+            default:
+                conn->client_data.settings.chat_mode = CL_CHAT_SETTINGS_FULL;
+        }
+        conn->client_data.settings.chat_colors = chat_colors;
+        conn->client_data.settings.skin_parts = skin_parts;
+        conn->client_data.settings.main_hand = main_hand;
+        conn->client_data.settings.enable_text_filtering = enable_text_filtering;
+        conn->client_data.settings.allow_server_listings = allow_server_listings;
+        LINFO("CLIENT SETTINGS FOR %s: locale=%s view_dist=%d chat_mode=%d chat_colors=%s skin_parts=%02x main_hand=%s enable_text_filtering=%s allow_server_listings=%s", conn->username, locale_str, view_dist, chat_mode, chat_colors ? "true" : "false", skin_parts, main_hand ? "right" : "left", enable_text_filtering ? "true" : "false", allow_server_listings ? "true" : "false");
+    } else if (pack) {
+        LWARN("Invalid Packet ID %d! (expected %d)", pack->packet_id, PACKID_C2S_CLIENT_SETTINGS);
+        send_disconnect_play(conn, "Protocol violation");
+        free_packet(pack);
+        return;
+    } else {
+        LWARN("Unable to receive packet from %s, closing connection!", conn->username);
+        return;
+    }
+    free_packet(pack);
+
+    send_held_item_change(conn, 6); /* conn->client_data.held_item */
+
+    bool alive = true;
+    while (alive) {
+        /* TODO: non-blocking fetch */
+        packet_t *incoming = packet_recv(conn);
+        if (incoming) {
+            switch (incoming->packet_id) {
+                default:
+                    LDEBUG("Incoming Packet with ID %d", incoming->packet_id);
+            }
+            free_packet(incoming);
+        }
+    }
 }

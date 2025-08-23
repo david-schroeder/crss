@@ -59,6 +59,8 @@ mcstring_t *new_mcstring(char *s);
 
 void free_mcstring(mcstring_t *string);
 
+char *mcstring_to_cstring(mcstring_t *s);
+
 typedef struct {
     char operation[9];
     char *data;
@@ -72,6 +74,7 @@ typedef enum {
     CL_TERMINATED
 } mcclient_state_e;
 
+/* Data about a connection and the connected client */
 typedef struct {
     int fd;
     bool compressed;
@@ -83,6 +86,7 @@ typedef struct {
     decrypted_buffer_t *shared_secret; // Buffer with length
     EVP_CIPHER_CTX *s2c_ctx;
     EVP_CIPHER_CTX *c2s_ctx;
+    client_data_t client_data;
 } mcsock_t;
 
 pairsock_op_t *client_pair_recv(void *sock);
@@ -156,6 +160,8 @@ void mcsock_write_uuid(packet_t *p, uuid_t uuid);
 
 void mcsock_write_byte_array(packet_t *p, uint8_t *array, uint32_t len);
 
+void mcsock_write_nbt_compound(packet_t *p, nbt_node_t *n);
+
 /*
 Generate MC-style Hex Digest String from SHA1 hex digest
 Overwrites data in `digest` iff MSB of digest is set
@@ -185,5 +191,6 @@ mcstring_t *get_request(char *url);
 #define ADD_FIELD_VARLONG(name) mcsock_write_varlong(pack, name)
 #define ADD_FIELD_BYTE_ARR(name, len) mcsock_write_byte_array(pack, name, len)
 #define ADD_FIELD_UUID(name) mcsock_write_uuid(pack, name)
+#define ADD_FIELD_NBT(name) mcsock_write_nbt_compound(pack, name)
 
 #endif // NETWORK_UTILS_H

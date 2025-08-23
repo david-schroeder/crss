@@ -24,7 +24,7 @@ Compile-Time Configuration definitions for CRSS.
 #define DIM_CODEC_EFFECTS "minecraft:overworld"
 #define DIM_CODEC_HAS_RAIDS 0
 #define DIM_CODEC_MIN_Y -64
-#define DIM_CODEC_HEIGHT 4096
+#define DIM_CODEC_HEIGHT 1024
 #define DIM_CODEC_LOGICAL_HEIGHT 256
 #define DIM_CODEC_COORDINATE_SCALE 1.0
 #define DIM_CODEC_ULTRAWARM 0

@@ -117,8 +117,12 @@ void packet_send(packet_t *p, mcsock_t *s) {
     if (s->encrypted) {
         // Since lengths are consistent, we can reuse the existing buffers
         EVP_EncryptUpdate(s->s2c_ctx, packlen_buf, (int *)&packlen_len, packlen_buf, packlen_len);
-        EVP_EncryptUpdate(s->s2c_ctx, packid_buf, (int *)&packid_len, packid_buf, packlen_len);
+        EVP_EncryptUpdate(s->s2c_ctx, packid_buf, (int *)&packid_len, packid_buf, packid_len);
+        uint32_t init_data_ptr = p->data_ptr;
         EVP_EncryptUpdate(s->s2c_ctx, p->data, (int *)&p->data_ptr, p->data, p->data_ptr);
+        if (p->data_ptr != init_data_ptr) {
+            LWARN("Inconsistent data lengths after encryption! (expected %u, got %u)", init_data_ptr, p->data_ptr);
+        }
     }
 
     write(s->fd, packlen_buf, packlen_len);
@@ -224,6 +228,14 @@ mcstring_t *new_mcstring(char *s) {
 void free_mcstring(mcstring_t *string) {
     free(string->data);
     free(string);
+}
+
+char *mcstring_to_cstring(mcstring_t *s) {
+    char *buf = malloc(s->length + 1);
+    memcpy(buf, s->data, s->length);
+    buf[s->length] = '\0';
+    free_mcstring(s);
+    return buf;
 }
 
 mcstring_t *mcsock_read_identifier(packet_t *s) {
@@ -390,6 +402,25 @@ void mcsock_write_byte_array(packet_t *p, uint8_t *array, uint32_t len) {
     allocate_packet_space(p, len);
     memcpy(&p->data[p->data_ptr], array, len);
     p->data_ptr += len;
+}
+
+void mcsock_write_nbt_compound(packet_t *p, nbt_node_t *n) {
+    length_buffer_t *lbuf = serialize_nbt(n, true, false);
+    mcsock_write_byte_array(p, lbuf->buffer, lbuf->length);
+    /*char s_bytes[4096];
+    for (int i = 0; i < lbuf->length; i++) {
+        uint8_t byte = lbuf->buffer[i];
+        if (byte >= 'a' && byte <= 'z' || byte >= 'A' && byte < 'Z' || byte == '_') {
+            sprintf(&s_bytes[3*i], " %c ", byte);
+        } else if (byte == ' ') {
+            sprintf(&s_bytes[3*i], "   ");
+        } else {
+            sprintf(&s_bytes[3*i], "%02x ", byte & 0xff);
+        }
+    }
+    DLINFO("Generated serial:\n'%s'", s_bytes);*/
+    free(lbuf->buffer);
+    free(lbuf);
 }
 
 mcstring_t *gen_mc_hexdigest(uint8_t *digest, uint32_t len) {

@@ -117,10 +117,61 @@ nbt_node_t *new_nbt_compound(char *name);
 
 void nbt_append_to_list(nbt_node_t *list, nbt_node_t *item);
 
-length_buffer_t *serialize_nbt(nbt_node_t *root, bool named);
+length_buffer_t *serialize_nbt(nbt_node_t *root, bool named, bool is_root);
 
 #define NBT_LIST_INIT_SIZE 8
 
 void free_nbt_node(nbt_node_t *node, bool free_children);
+
+/*
+Player Data
+
+This is local player data necessary for communicating with the client. One object is maintained per player/connection.
+*/
+
+typedef enum {
+    CL_CHAT_SETTINGS_FULL,
+    CL_CHAT_SETTINGS_CMDONLY,
+    CL_CHAT_SETTINGS_HIDDEN
+} mcclient_chat_settings_e;
+
+#define SKIN_PART_CAPE 0x01
+#define SKIN_PART_JACKET 0x02
+#define SKIN_PART_LEFT_SLEEVE 0x04
+#define SKIN_PART_RIGHT_SLEEVE 0x08
+#define SKIN_PART_LEFT_PANTS 0x10
+#define SKIN_PART_RIGHT_PANTS 0x20
+#define SKIN_PART_HAT 0x40
+
+typedef struct {
+    char *id; /* NOTE: consider integer/enum */
+    uint8_t count;
+} slot_t;
+
+typedef struct {
+    slot_t *slots;
+    uint32_t count;
+} container_t;
+
+typedef struct {
+    uuid_t uuid;
+    struct {
+        char *locale;
+        int8_t view_dist;
+        mcclient_chat_settings_e chat_mode;
+        bool chat_colors;
+        uint8_t skin_parts;
+        uint32_t main_hand;
+        bool enable_text_filtering;
+        bool allow_server_listings;
+    } settings;
+    double x;
+    double y;
+    double z;
+    float theta; // facing (yaw)
+    float phi; // facing (pitch)
+    container_t *inventory;
+    uint8_t held_item; // slot id of the held item (0-8)
+} client_data_t;
 
 #endif // CORETYPES_H

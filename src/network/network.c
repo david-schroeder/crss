@@ -146,17 +146,11 @@ int run_network_master(char *ip, int port) {
             LINFO("Accepted new connection!");
 
             /* Create mcsock object */
-            mcsock_t *conn = malloc(sizeof(mcsock_t));
+            mcsock_t *conn = calloc(1, sizeof(mcsock_t));
             conn->fd = new_socket;
-            conn->compressed = false;
-            conn->encrypted = false;
             conn->client_id = client_id++;
             conn->state = CL_HANDSHAKING;
-            conn->username = NULL;
             conn->server_keypair = server_keypair;
-            conn->shared_secret = NULL;
-            conn->s2c_ctx = NULL;
-            conn->c2s_ctx = NULL;
 
             /* Add to CTB */
             if (ctb_used == ctb_size) {
