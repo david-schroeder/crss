@@ -34,7 +34,6 @@ static void *dispatch(mcsock_t *conn) {
         switch (pvn) {
             case MC_PVN_1_18_2:
             case -1: // Client is determining what version to use
-                // TODO: threading (also ZMQ pair socket management)
                 if (is_status) handle_status_758(conn);
                 if (is_play) handle_play_758(conn);
                 break;

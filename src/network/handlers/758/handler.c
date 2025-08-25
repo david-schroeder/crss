@@ -1,6 +1,6 @@
 #include "handler.h"
 
-//#define ENCRYPTED
+#define ENCRYPTED
 
 //////////////////////
 ////              ////
@@ -584,12 +584,67 @@ static void handle_state_play(mcsock_t *conn) {
 
     bool alive = true;
     while (alive) {
-        /* TODO: non-blocking fetch */
-        packet_t *incoming = packet_recv(conn);
+        packet_t *incoming = non_blocking_packet_recv(conn);
         if (incoming) {
             switch (incoming->packet_id) {
+                case PACKID_C2S_TELEPORT_CONFIRM:
+                    break;
+                case PACKID_C2S_CHAT_MESSAGE:
+                    break;
+                case PACKID_C2S_CLIENT_STATUS:
+                    break;
+                case PACKID_C2S_CLIENT_SETTINGS:
+                    break;
+                case PACKID_C2S_TAB_COMPLETE:
+                    break;
+                case PACKID_C2S_CLICK_WINDOW_BUTTON:
+                    break;
+                case PACKID_C2S_CLICK_WINDOW:
+                    break;
+                case PACKID_C2S_CLOSE_WINDOW:
+                    break;
+                case PACKID_C2S_PLUGIN_MESSAGE:
+                    break;
+                case PACKID_C2S_EDIT_BOOK:
+                    break;
+                case PACKID_C2S_QUERY_ENTITY_NBT:
+                    break;
+                case PACKID_C2S_KEEP_ALIVE:
+                    break;
+                case PACKID_C2S_PLAYER_POSITION:
+                    break;
+                case PACKID_C2S_PLAYER_POS_AND_ROT:
+                    break;
+                case PACKID_C2S_PLAYER_ROTATION:
+                    break;
+                case PACKID_C2S_PLAYER_MOVEMENT:
+                    break;
+                case PACKID_C2S_PICK_ITEM:
+                    break;
+                case PACKID_C2S_PLAYER_ABILITIES:
+                    break;
+                case PACKID_C2S_PLAYER_DIGGING:
+                    break;
+                case PACKID_C2S_ENTITY_ACTION:
+                    break;
+                case PACKID_C2S_PONG:
+                    break;
+                case PACKID_C2S_HELD_ITEM_CHANGE:
+                    break;
+                case PACKID_C2S_CREATIVE_INV_ACTION:
+                    break;
+                case PACKID_C2S_UPDATE_SIGN:
+                    break;
+                case PACKID_C2S_ANIMATION:
+                    break;
+                case PACKID_C2S_BLOCK_PLACEMENT:
+                    break;
+                case PACKID_C2S_USE_ITEM:
+                    break;
                 default:
-                    LDEBUG("Incoming Packet with ID %d", incoming->packet_id);
+                    DLDEBUG("Incoming Packet with ID %d", incoming->packet_id);
+                    LWARN("Bad packet from client %s, terminating.", conn->username);
+                    alive = false;
             }
             free_packet(incoming);
         }

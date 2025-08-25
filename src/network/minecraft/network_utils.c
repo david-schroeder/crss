@@ -90,6 +90,24 @@ packet_t *packet_recv(mcsock_t *s) {
     return pack;
 }
 
+packet_t *non_blocking_packet_recv(mcsock_t *s) {
+    /* Check whether socket `s` has a new packet, and if yes, reads it with packet_recv */
+    char *fnpath = "network.utils.packet_recv.noblock";
+    struct pollfd pollitems = {
+        .fd = s->fd,
+        .events = POLLIN
+    };
+    if (poll(&pollitems, 1, 10) < 1) {
+        /* EAGAIN and EWOULDBLOCK are expected */
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            LWARN("Failed to poll socket [errno %d]", errno);
+        }
+        return NULL;
+    }
+    if ((pollitems.revents & POLLIN) == 0) return NULL;
+    return packet_recv(s);
+}
+
 static size_t write_varint_to_buf(uint8_t *buf, int32_t value) {
     size_t vi_size = 0; // VarInt size
     bool has_more;

@@ -7,6 +7,7 @@
 
 #include <curl/curl.h>
 #include <zmq.h>
+#include <poll.h>
 
 /*
 Packet usage
@@ -96,6 +97,8 @@ pairsock_op_t *client_pair_recv_blocking(void *sock);
 void client_pair_send(void *sock, char *operation, char *data);
 
 packet_t *packet_recv(mcsock_t *s);
+
+packet_t *non_blocking_packet_recv(mcsock_t *s);
 
 void packet_send(packet_t *p, mcsock_t *s);
 
