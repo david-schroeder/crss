@@ -3,13 +3,14 @@
 // Argp options
 const char* argp_program_version;
 const char* argp_program_bug_address = "<post@schroederdavid.de>";
-static char doc[] = "CRSS Implementation by David Schröder\nhttps://git.tu-berlin.de/schroeder_dav1d/";
+static char doc[] = "CRSS Implementation by David Schröder\n"
+    "https://git.tu-berlin.de/schroeder_dav1d/ - https://github.com/david-schroeder/";
 static struct argp_option options[] = {
     {"debug",    'd',  "LEVEL",    0,              "Debug level for execution"     },
     {"port",     'p',  "PORT",     0,              "Port to host server on"        },
     {"address",  'a',  "ADDRESS",  0,              "Address to host server on"     },
     {"name",     'n',  "NAME",     OPTION_HIDDEN,  "The name to execute by"        },
-    {"longname", 'l', "LONGNAME",  OPTION_HIDDEN,  "Software name - long version"  },
+    {"longname", 'l',  "LONGNAME", OPTION_HIDDEN,  "Software name - long version"  },
     {"nogui",    'g',  0,          0,              "Do not open GUI"               },
     {0}
 };

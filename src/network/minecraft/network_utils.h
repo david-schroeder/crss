@@ -189,6 +189,7 @@ mcstring_t *get_request(char *url);
 #define ADD_FIELD_LONG(name) mcsock_write_long(pack, name)
 #define ADD_FIELD_FLOAT(name) mcsock_write_float(pack, name)
 #define ADD_FIELD_DOUBLE(name) mcsock_write_double(pack, name)
+#define ADD_FIELD_STRING(name) mcsock_write_string(pack, name)
 #define ADD_FIELD_CSTRING(name) mcsock_write_c_string(pack, name)
 #define ADD_FIELD_VARINT(name) mcsock_write_varint(pack, name)
 #define ADD_FIELD_VARLONG(name) mcsock_write_varlong(pack, name)

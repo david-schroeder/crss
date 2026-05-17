@@ -168,10 +168,14 @@ typedef struct {
     double x;
     double y;
     double z;
+    bool on_ground;
     float theta; // facing (yaw)
     float phi; // facing (pitch)
     container_t *inventory;
     uint8_t held_item; // slot id of the held item (0-8)
+    long keep_alive_id;
+    bool keep_alive_waiting;
+    long teleport_id;
 } client_data_t;
 
 #endif // CORETYPES_H

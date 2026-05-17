@@ -108,6 +108,7 @@ int run_network_master(char *ip, int port) {
 
     CONNECT_TO_CMD_BROADCAST();
     SUBSCRIBE_TO_CMD("network");
+    SUBSCRIBE_TO_CMD("player");
     SUBSCRIBE_TO_CMD("exit");
     SUBSCRIBE_TO_CMD("quit");
 
@@ -119,7 +120,7 @@ int run_network_master(char *ip, int port) {
     int client_id = 0;
 
     /*
-    There is a buffer, called the Client Thread Buffer (CTB), which
+    We use a buffer, called the Client Thread Buffer (CTB), which
     manages all client threads. Each entry is an mcclient_t object,
     and retains information about the thread, the socket, and the
     connection state. The CTB dynamically changes size when it gets
@@ -212,6 +213,54 @@ int run_network_master(char *ip, int port) {
         })
         HANDLE_COMMAND("quit", {
             EXIT_CMD_HANDLER();
+        })
+        HANDLE_COMMAND("player info", {
+            char *player = RECEIVED_CMD_ARGV[2];
+            bool found = false;
+            for (int i = 0; i < ctb_used; i++) {
+                if (ctb[i].conn->username && strcmp(ctb[i].conn->username, player) == 0) {
+                    found = true;
+                    client_data_t cl_data = ctb[i].conn->client_data;
+                    char *uuid_str = uuid_to_string(&cl_data.uuid);
+                    char *chat_settings = cl_data.settings.chat_mode == CL_CHAT_SETTINGS_FULL
+                        ? "Full"
+                        : cl_data.settings.chat_mode == CL_CHAT_SETTINGS_CMDONLY
+                            ? "Commands Only"
+                            : "Hidden";
+                    LINFO("\n Information about player %s"
+                          "\n     UUID: %s"
+                          "\n     XYZ: %lf / %lf / %lf"
+                          "\n     Facing: %lf / %lf"
+                          "\n     On Ground: %s"
+                          "\n     Held Item Slot: %d"
+                          "\n     Settings"
+                          "\n         Locale: %s"
+                          "\n         View Distance: %d"
+                          "\n         Chat Mode: %s"
+                          "\n         Chat Colors: %s"
+                          "\n         Skin Parts: 0x%02x"
+                          "\n         Main Hand: %s"
+                          "\n         Text Filtering: %s"
+                          "\n         Server Listings: %s",
+                          player,
+                          uuid_str,
+                          cl_data.x, cl_data.y, cl_data.z,
+                          cl_data.theta, cl_data.phi,
+                          cl_data.on_ground ? "Yes" : "No",
+                          cl_data.held_item,
+                          cl_data.settings.locale,
+                          cl_data.settings.view_dist,
+                          chat_settings,
+                          cl_data.settings.chat_colors ? "Enabled" : "Disabled",
+                          cl_data.settings.skin_parts,
+                          cl_data.settings.main_hand == 1 ? "Right" : "Left",
+                          cl_data.settings.enable_text_filtering ? "Enabled" : "Disabled",
+                          cl_data.settings.allow_server_listings ? "Allowed" : "Disallowed"
+                        );
+                    free(uuid_str);
+                }
+            }
+            if (!found) LINFO("Player %s is not online.", player);
         })
     })
 

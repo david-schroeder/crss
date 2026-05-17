@@ -30,8 +30,10 @@ Minecraft protocol handler for PVN 758 (Minecraft 1.18.2).
 /* Packet IDs for Play state */
 
 // S->C
+#define PACKID_S2C_CHAT_MESSAGE (0x0F)
 #define PACKID_S2C_PLUGIN_MESSAGE (0x18)
 #define PACKID_S2C_DISCONNECT_PLAY (0x1A)
+#define PACKID_S2C_KEEP_ALIVE (0x21)
 #define PACKID_S2C_JOIN_GAME (0x26)
 #define PACKID_S2C_PLAYER_INFO (0x36)
 #define PACKID_S2C_UPDATE_PLAYER_POS_AND_LOOK (0x38)

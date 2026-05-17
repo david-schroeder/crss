@@ -190,9 +190,9 @@ int table_main() {
     table_set_cell(t, 0, 2, "raspberry chocolate cake");
     table_set_cell(t, 1, 0, "hmmm");
     table_set_cell(t, 1, 1, "X");
-    table_set_cell(t, 1, 2, "sigma");
+    table_set_cell(t, 1, 2, "gamma");
     table_set_cell(t, 2, 0, "entry");
-    table_set_cell(t, 2, 2, "WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    table_set_cell(t, 2, 2, "very very long text - lorem ipsum test test");
     table_no_format_line(t, 1);
     char *dumped = dump_table(t, true, "\033[0m\033[2m", "\033[36;1m", "\033[0m");
     printf("%s\n", dumped);

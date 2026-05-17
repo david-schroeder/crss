@@ -41,6 +41,14 @@ void client_pair_send(void *sock, char *operation, char *data) {
     free(buf);
 }
 
+void client_pair_send_mcstring(void *sock, char *operation, mcstring_t *data) {
+    uint8_t *buf = malloc(8+data->length);
+    memcpy(buf, operation, 8);
+    memcpy(&buf[8], data->data, data->length);
+    zmq_send(sock, &data->length, 4, 0);
+    zmq_send(sock, buf, data->length+8, 0);
+}
+
 static int32_t sock_read_varint(mcsock_t *s) {
     char *fnpath = "network.utils.sock_read_varint";
     int32_t varint = 0;
@@ -212,7 +220,8 @@ float mcsock_read_float(packet_t *s) {
         value <<= 8;
         value |= s->data[s->data_ptr++];
     }
-    return (float)value;
+    /* Requires strict aliasing off */
+    return *((float*)&value);
 }
 
 double mcsock_read_double(packet_t *s) {
@@ -221,7 +230,8 @@ double mcsock_read_double(packet_t *s) {
         value <<= 8;
         value |= s->data[s->data_ptr++];
     }
-    return (double)value;
+    /* Requires strict aliasing off */
+    return *((double*)&value);
 }
 
 mcstring_t *mcsock_read_string(packet_t *s) {

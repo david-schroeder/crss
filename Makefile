@@ -15,6 +15,7 @@ OBJFILES    := build/rss-server.o \
 				build/network/crypto.o \
 				build/network/network.o \
 				build/network/minecraft/network_utils.o \
+				build/network/minecraft/cmdgraph.o \
 				build/network/handlers/758/handler.o \
 				build/core/coretypes.o \
 				build/core/hashmap.o \

@@ -476,7 +476,7 @@ void send_join_game(mcsock_t *conn) {
 void send_crss_brand(mcsock_t *conn) {
     SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_PLUGIN_MESSAGE, 64, {
         ADD_FIELD_CSTRING("minecraft:brand");
-        ADD_FIELD_CSTRING(SOFTWARE_NAME);
+        ADD_FIELD_CSTRING(PROTOCOL_BRAND_STRING);
     })
 }
 
@@ -494,8 +494,14 @@ void send_update_player_pos_and_look(mcsock_t *conn) {
         ADD_FIELD_FLOAT(conn->client_data.theta);
         ADD_FIELD_FLOAT(conn->client_data.phi);
         ADD_FIELD_BYTE(0); /* Flags */
-        ADD_FIELD_VARINT(0); /* Teleport ID */
+        ADD_FIELD_VARINT(conn->client_data.teleport_id++);
         ADD_FIELD_BOOL(false); /* Should dismount vehicle */
+    })
+}
+
+void send_keep_alive(mcsock_t *conn) {
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_KEEP_ALIVE, 32, {
+        ADD_FIELD_LONG(conn->client_data.keep_alive_id);
     })
 }
 
@@ -520,6 +526,26 @@ void send_player_info(mcsock_t *conn, player_info_action_e action) {
         ADD_FIELD_VARINT(350); /* Ping */
         ADD_FIELD_BOOL(false); /* Has display name */
     })
+}
+
+typedef enum {
+    CHATPOS_CHAT = 0,
+    CHATPOS_SYSTEM_CHAT = 1,
+    CHATPOS_HOTBAR = 2
+} chat_position_e;
+
+void send_chat_message(mcsock_t *conn, char *s, chat_position_e pos, uuid_t sender) {
+    // json format: {"text": "(s)"} -> 12 extra chars
+    mcstring_t *string = malloc(sizeof(mcstring_t));
+    string->length = strlen(s) + 12; // do with cstring instead !!!
+    string->data = malloc(string->length);
+    sprintf(string->data, "{\"text\": \"%s\"}", s);
+    SEND_PACKET_FUNCTION_WRAPPER(PACKID_S2C_CHAT_MESSAGE, 64, {
+        ADD_FIELD_STRING(string);
+        ADD_FIELD_BYTE((uint8_t)pos);
+        ADD_FIELD_UUID(sender);
+    })
+    free_mcstring(string);
 }
 
 static void handle_state_play(mcsock_t *conn) {
@@ -568,7 +594,7 @@ static void handle_state_play(mcsock_t *conn) {
         conn->client_data.settings.main_hand = main_hand;
         conn->client_data.settings.enable_text_filtering = enable_text_filtering;
         conn->client_data.settings.allow_server_listings = allow_server_listings;
-        LINFO("CLIENT SETTINGS FOR %s: locale=%s view_dist=%d chat_mode=%d chat_colors=%s skin_parts=%02x main_hand=%s enable_text_filtering=%s allow_server_listings=%s", conn->username, locale_str, view_dist, chat_mode, chat_colors ? "true" : "false", skin_parts, main_hand ? "right" : "left", enable_text_filtering ? "true" : "false", allow_server_listings ? "true" : "false");
+        LDEBUG("CLIENT SETTINGS FOR %s: locale=%s view_dist=%d chat_mode=%d chat_colors=%s skin_parts=%02x main_hand=%s enable_text_filtering=%s allow_server_listings=%s", conn->username, locale_str, view_dist, chat_mode, chat_colors ? "true" : "false", skin_parts, main_hand ? "right" : "left", enable_text_filtering ? "true" : "false", allow_server_listings ? "true" : "false");
     } else if (pack) {
         LWARN("Invalid Packet ID %d! (expected %d)", pack->packet_id, PACKID_C2S_CLIENT_SETTINGS);
         send_disconnect_play(conn, "Protocol violation");
@@ -587,66 +613,151 @@ static void handle_state_play(mcsock_t *conn) {
         packet_t *incoming = non_blocking_packet_recv(conn);
         if (incoming) {
             switch (incoming->packet_id) {
-                case PACKID_C2S_TELEPORT_CONFIRM:
+                case PACKID_C2S_TELEPORT_CONFIRM: {
+                    long tpid = mcsock_read_long(incoming);
+                    if (tpid != conn->client_data.teleport_id - 1) {
+                        send_disconnect_play(conn, "{\"text\": \"Incorrect Teleport ID\"}");
+                        alive = false;
+                    }
                     break;
-                case PACKID_C2S_CHAT_MESSAGE:
+                }
+                case PACKID_C2S_CHAT_MESSAGE: {
+                    mcstring_t *msg = mcsock_read_string(incoming);
+                    if (msg->length && msg->data[0] == '/') {
+                        /* Command*/
+                        char *internal_cmd = malloc(msg->length+7);
+                        sprintf(internal_cmd, "mccmd %s", msg->data);
+                        free_mcstring(msg);
+
+                        dispatch_command(internal_cmd);
+                        
+                        free(internal_cmd);
+                    } else {
+                        // CHAT MESSAGES
+                        // Format: <(name)> (message)
+                        char *string = malloc(msg->length + strlen(conn->username) + 4);
+                        char *msg_s = mcstring_to_cstring(msg);
+                        sprintf(string, "<%s> %s", conn->username, msg_s);
+                        LINFO("Chat input from %s: '%s'", conn->username, msg_s);
+                        free(msg_s);
+                        send_chat_message(conn, string, CHATPOS_CHAT, conn->client_data.uuid);
+                    }
                     break;
-                case PACKID_C2S_CLIENT_STATUS:
+                }
+                case PACKID_C2S_CLIENT_STATUS: {
                     break;
-                case PACKID_C2S_CLIENT_SETTINGS:
+                }
+                case PACKID_C2S_CLIENT_SETTINGS: {
                     break;
-                case PACKID_C2S_TAB_COMPLETE:
+                }
+                case PACKID_C2S_TAB_COMPLETE: {
                     break;
-                case PACKID_C2S_CLICK_WINDOW_BUTTON:
+                }
+                case PACKID_C2S_CLICK_WINDOW_BUTTON: {
                     break;
-                case PACKID_C2S_CLICK_WINDOW:
+                }
+                case PACKID_C2S_CLICK_WINDOW: {
                     break;
-                case PACKID_C2S_CLOSE_WINDOW:
+                }
+                case PACKID_C2S_CLOSE_WINDOW: {
                     break;
-                case PACKID_C2S_PLUGIN_MESSAGE:
+                }
+                case PACKID_C2S_PLUGIN_MESSAGE: {
                     break;
-                case PACKID_C2S_EDIT_BOOK:
+                }
+                case PACKID_C2S_EDIT_BOOK: {
                     break;
-                case PACKID_C2S_QUERY_ENTITY_NBT:
+                }
+                case PACKID_C2S_QUERY_ENTITY_NBT: {
                     break;
-                case PACKID_C2S_KEEP_ALIVE:
+                }
+                case PACKID_C2S_KEEP_ALIVE: {
+                    if (!conn->client_data.keep_alive_waiting) {
+                        send_disconnect_play(conn, "{\"text\": \"Unexpected Keep Alive Packet\"}");
+                        alive = false;
+                        break;
+                    }
+                    long keep_alive_id = mcsock_read_long(incoming);
+                    if (keep_alive_id != conn->client_data.keep_alive_id) {
+                        send_disconnect_play(conn, "{\"text\": \"Incorrect Keep Alive ID\"}");
+                        alive = false;
+                        break;
+                    }
+                    conn->client_data.keep_alive_waiting = false;
+                    //LVERBOSE("Keep alive to %s", conn->username);
                     break;
-                case PACKID_C2S_PLAYER_POSITION:
+                }
+                case PACKID_C2S_PLAYER_POSITION: {
+                    conn->client_data.x = mcsock_read_double(incoming);
+                    conn->client_data.y = mcsock_read_double(incoming);
+                    conn->client_data.z = mcsock_read_double(incoming);
+                    conn->client_data.on_ground = mcsock_read_bool(incoming);
                     break;
-                case PACKID_C2S_PLAYER_POS_AND_ROT:
+                }
+                case PACKID_C2S_PLAYER_POS_AND_ROT: {
                     break;
-                case PACKID_C2S_PLAYER_ROTATION:
+                }
+                case PACKID_C2S_PLAYER_ROTATION: {
                     break;
-                case PACKID_C2S_PLAYER_MOVEMENT:
+                }
+                case PACKID_C2S_PLAYER_MOVEMENT: {
                     break;
-                case PACKID_C2S_PICK_ITEM:
+                }
+                case PACKID_C2S_PICK_ITEM: {
                     break;
-                case PACKID_C2S_PLAYER_ABILITIES:
+                }
+                case PACKID_C2S_PLAYER_ABILITIES: {
                     break;
-                case PACKID_C2S_PLAYER_DIGGING:
+                }
+                case PACKID_C2S_PLAYER_DIGGING: {
                     break;
-                case PACKID_C2S_ENTITY_ACTION:
+                }
+                case PACKID_C2S_ENTITY_ACTION: {
                     break;
-                case PACKID_C2S_PONG:
+                }
+                case PACKID_C2S_PONG: {
                     break;
-                case PACKID_C2S_HELD_ITEM_CHANGE:
+                }
+                case PACKID_C2S_HELD_ITEM_CHANGE: {
                     break;
-                case PACKID_C2S_CREATIVE_INV_ACTION:
+                }
+                case PACKID_C2S_CREATIVE_INV_ACTION: {
                     break;
-                case PACKID_C2S_UPDATE_SIGN:
+                }
+                case PACKID_C2S_UPDATE_SIGN: {
                     break;
-                case PACKID_C2S_ANIMATION:
+                }
+                case PACKID_C2S_ANIMATION: {
                     break;
-                case PACKID_C2S_BLOCK_PLACEMENT:
+                }
+                case PACKID_C2S_BLOCK_PLACEMENT: {
                     break;
-                case PACKID_C2S_USE_ITEM:
+                }
+                case PACKID_C2S_USE_ITEM: {
                     break;
+                }
                 default:
-                    DLDEBUG("Incoming Packet with ID %d", incoming->packet_id);
-                    LWARN("Bad packet from client %s, terminating.", conn->username);
+                    LDEBUG("Incoming Packet with ID %d", incoming->packet_id);
+                    LDEBUG("Bad packet from client %s, terminating.", conn->username);
                     alive = false;
             }
             free_packet(incoming);
+        }
+        /* Clientbound */
+
+        /* Keep alives*/
+        time_t current_time = time(NULL);
+        if (!conn->client_data.keep_alive_waiting && current_time - conn->client_data.keep_alive_id > 10) {
+            /* After 10 seconds, server sends keep alive */
+            conn->client_data.keep_alive_id = current_time;
+            conn->client_data.keep_alive_waiting = true;
+            send_keep_alive(conn);
+        }
+        if (conn->client_data.keep_alive_waiting && current_time - conn->client_data.keep_alive_id > 15) {
+            /* Didn't receive keep alive response in time -> kick */
+            send_disconnect_play(conn, "{\"text\": \"Client timed out\"}");
+            LWARN("Client %s did not respond to keep alive in time. Terminating.", conn->username);
+            alive = false;
         }
     }
 }

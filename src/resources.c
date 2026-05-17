@@ -20,6 +20,7 @@ const char *RESOURCE_HELP_GENERAL = "\n"
     NL "    Networking" DIM "................" BOLDGREEN "help network"
     NL "    Schematics" DIM "................" BOLDGREEN "help schems"
     NL "    Plot Management" DIM "..........." BOLDGREEN "help plot"
+    NL "    Player Management" DIM "........." BOLDGREEN "help player"
     NL "  GUI" DIM "........................." BOLDGREEN "help gui"
     NS;
 

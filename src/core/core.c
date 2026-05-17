@@ -10,6 +10,7 @@ int crss_core_run() {
     SUBSCRIBE_TO_CMD("exit");
     SUBSCRIBE_TO_CMD("quit");
     SUBSCRIBE_TO_CMD("plot");
+    SUBSCRIBE_TO_CMD("mccmd");
 
     LVERBOSE("Notifying Logger...");
     logger_notify("Core");
@@ -20,7 +21,6 @@ int crss_core_run() {
     uuid_t __server_uuid;
     memset(__server_uuid, 0, 16);
 
-    // TODO: turn command loop into dispatcher function
     LVERBOSE("Entering command park loop...");
     RUN_CMD_HANDLER({}, {
         HANDLE_COMMAND("exit", {
@@ -55,6 +55,9 @@ int crss_core_run() {
         })
         HANDLE_COMMAND("plot get", {
             plot_get(plotworld, RECEIVED_CMD_ARGC, RECEIVED_CMD_ARGV);
+        })
+        HANDLE_COMMAND("mccmd /crss ", {
+            dispatch_command(&RECEIVED_CMD[12]);
         })
     })
 

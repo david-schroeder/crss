@@ -12,6 +12,9 @@ Compile-Time Configuration definitions for CRSS.
 // Server ID for Encryption Request Packet
 #define PROTOCOL_SERVER_ID "CRSS"
 
+// Server Name for brand (in-game F3 menu)
+#define PROTOCOL_BRAND_STRING "C Redstone Speedup" // (Server)
+
 // Dimension Codec Defaults
 #define DIM_CODEC_PIGLIN_SAFE 1
 #define DIM_CODEC_NATURAL 1
