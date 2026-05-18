@@ -6,6 +6,14 @@
 
 #include "gtk/gtk.h"
 
+struct _CrssAppWindow {
+    GtkApplicationWindow parent;
+    GtkWidget *console_text_view;
+    GtkWidget *console_command_entry;
+    GtkWidget *console_text_wrap_button;
+    GtkGLArea *graph_area;
+};
+
 #define CRSS_APP_TYPE (crss_app_get_type())
 // no clue how this works but eh *shrug*
 G_DECLARE_FINAL_TYPE(CrssApp, crss_app, CRSS, APP, GtkApplication)

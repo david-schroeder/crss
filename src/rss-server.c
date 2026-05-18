@@ -282,5 +282,8 @@ int main(int argc, char* argv[]) {
     zmq_ctx_term(crss_zmq_ctx());
     cleanup_utils();
 
+    // Mysterious issue: In GUI mode, reaches here
+    // but doesn't close. Suspicion: unjoined thread
+
     return return_code;
 }

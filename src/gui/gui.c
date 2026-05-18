@@ -5,21 +5,29 @@
 // CRSS APP WINDOW //
 /////////////////////
 
-struct _CrssAppWindow {
-    GtkApplicationWindow parent;
-    GtkWidget *console_text_view;
-    GtkWidget *console_command_entry;
-    GtkWidget *console_text_wrap_button;
-    GtkWidget *graph_area; // GLArea
-};
 G_DEFINE_TYPE(CrssAppWindow, crss_app_window, GTK_TYPE_APPLICATION_WINDOW);
 
 // Forward declarations
+void on_graph_area_realize(GtkGLArea *area, gpointer user_data);
 void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win);
 void toggle_console_wrap(GtkCheckButton *button, CrssAppWindow *win);
 
 static void crss_app_window_init(CrssAppWindow *win) {
     gtk_widget_init_template(GTK_WIDGET(win));
+
+    g_signal_connect(
+        win->graph_area,
+        "realize",
+        G_CALLBACK(on_graph_area_realize),
+        win
+    );
+
+    g_signal_connect(
+        win->graph_area,
+        "render",
+        G_CALLBACK(render_graph_area),
+        win
+    );
 }
 
 static void crss_app_window_class_init(CrssAppWindowClass *cls) {
@@ -31,7 +39,6 @@ static void crss_app_window_class_init(CrssAppWindowClass *cls) {
     ATTACH_ELEMENT(console_text_wrap_button);
     ATTACH_ELEMENT(graph_area);
     BIND_CALLBACK(issue_console_command_callback);
-    BIND_CALLBACK(render_graph_area);
     BIND_CALLBACK(toggle_console_wrap);
 }
 
@@ -85,6 +92,14 @@ CrssApp *crss_app_new(void) {
 // CALLBACKS //
 ///////////////
 
+void on_graph_area_realize(GtkGLArea *area, gpointer user_data) {
+    CrssAppWindow *win = user_data;
+
+    gtk_gl_area_make_current(area);
+
+    if (gtk_gl_area_get_error(area)) return;
+}
+
 void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
     GUI_PATH("console.callback");
 
@@ -132,6 +147,7 @@ static bool _GUI_FORMATTED_LOG = false;
 ////////////////////
 
 static gboolean __terminate_gui_inner() {
+    if (!WITH_GUI) return G_SOURCE_REMOVE;
     DLDEBUG("Quitting GTK Application!");
     gtk_widget_unrealize(GTK_WIDGET(WINDOW->graph_area));
     gtk_window_close(GTK_WINDOW(WINDOW));

@@ -340,7 +340,7 @@ static void prettyprint_graph(rs_graph_t *graph) {
     }
 }
 
-int main() {
+int graph_main() {
     rs_graph_t *graph = rs_graph_new();
     rs_node_t *node1 = rs_graph_alloc_node(graph);
     rs_node_t *node2 = rs_graph_alloc_node(graph);
@@ -364,10 +364,32 @@ int main() {
     rs_edge_t *edge12 = rs_graph_add_edge(graph, node3, node5);
     prettyprint_graph(graph);
     rs_graph_delete_node(graph, node2);
+    rs_graph_delete_edge(graph, edge5);
 
     printf("----\n");
 
     prettyprint_graph(graph);
+
+    (void)node1;
+    (void)node2;
+    (void)node3;
+    (void)node4;
+    (void)node5;
+    (void)node6;
+    (void)node7;
+    (void)node8;
+    (void)edge1;
+    (void)edge2;
+    (void)edge3;
+    (void)edge4;
+    (void)edge5;
+    (void)edge6;
+    (void)edge7;
+    (void)edge8;
+    (void)edge9;
+    (void)edge10;
+    (void)edge11;
+    (void)edge12;
 
     rs_graph_free(graph);
     return 0;
