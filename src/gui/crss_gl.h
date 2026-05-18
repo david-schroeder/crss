@@ -7,6 +7,8 @@
 
 #include <epoxy/gl.h>
 
+void setup_openGL(CrssAppWindow *win);
+
 gboolean render_graph_area(GtkGLArea *area, GdkGLContext *ctx, gpointer user_data);
 
 #endif // CRSS_GL_H

@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include "internals.h"
+#include "../core/redsynth/graph.h"
 
 #include "gtk/gtk.h"
 
@@ -12,6 +13,10 @@ struct _CrssAppWindow {
     GtkWidget *console_command_entry;
     GtkWidget *console_text_wrap_button;
     GtkGLArea *graph_area;
+
+    rs_graph_t *graph;
+    uint32_t graph_shader_program;
+    uint32_t graph_vao;
 };
 
 #define CRSS_APP_TYPE (crss_app_get_type())

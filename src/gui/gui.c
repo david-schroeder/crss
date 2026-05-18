@@ -14,6 +14,26 @@ void toggle_console_wrap(GtkCheckButton *button, CrssAppWindow *win);
 
 static void crss_app_window_init(CrssAppWindow *win) {
     gtk_widget_init_template(GTK_WIDGET(win));
+    
+    gtk_gl_area_set_required_version(
+        win->graph_area,
+        3,
+        3
+    );
+    gtk_gl_area_set_allowed_apis(
+        win->graph_area,
+        GDK_GL_API_GL
+    );
+    gtk_gl_area_set_has_depth_buffer(
+        win->graph_area,
+        TRUE
+    );
+
+    /* TEST DATA */
+
+    win->graph = rs_graph_new();
+
+    /* SIGNALS */
 
     g_signal_connect(
         win->graph_area,
@@ -93,11 +113,17 @@ CrssApp *crss_app_new(void) {
 ///////////////
 
 void on_graph_area_realize(GtkGLArea *area, gpointer user_data) {
-    CrssAppWindow *win = user_data;
+    GUI_PATH("graph_area_realize");
 
     gtk_gl_area_make_current(area);
 
     if (gtk_gl_area_get_error(area)) return;
+
+    setup_openGL((CrssAppWindow*)user_data);
+
+    LDEBUG("GL VERSION: %s", glGetString(GL_VERSION));
+    LDEBUG("GLSL VERSION: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    LDEBUG("RENDERER: %s", glGetString(GL_RENDERER));
 }
 
 void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
