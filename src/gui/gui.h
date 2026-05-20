@@ -7,7 +7,6 @@
 #include "../core/redsynth/graph.h"
 
 #include <gtk/gtk.h>
-#include <gdk/gdk.h>
 
 struct _CrssAppWindow {
     GtkApplicationWindow parent;

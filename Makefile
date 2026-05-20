@@ -1,4 +1,4 @@
-CFLAGS		:= -std=c23 -Wall -Wno-unused-command-line-argument -fsanitize=address -fno-strict-aliasing -g -O0 -D DEBUG -Ilib -lpthread `pkg-config gtk4 libzmq epoxy openssl libcurl --cflags --libs`
+CFLAGS		:= -std=c23 -Wall -Wno-unused-command-line-argument -fsanitize=address,undefined -fno-omit-frame-pointer -fno-strict-aliasing -g -O0 -D DEBUG -Ilib -lpthread -lm `pkg-config gtk4 libzmq epoxy openssl libcurl --cflags --libs`
 CC			:= clang
 OBJFILES    := build/rss-server.o \
 				build/version.o \

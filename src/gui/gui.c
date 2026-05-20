@@ -244,12 +244,12 @@ static bool _GUI_FORMATTED_LOG = false;
 
 static gboolean __terminate_gui_inner() {
     if (!WITH_GUI) return G_SOURCE_REMOVE;
-    WINDOW = NULL;
-    APP = NULL;
     DLDEBUG("Quitting GTK Application!");
     gtk_widget_unrealize(GTK_WIDGET(WINDOW->graph_area));
     gtk_window_close(GTK_WINDOW(WINDOW));
-    g_application_quit(G_APPLICATION(APP));
+    g_application_quit(G_APPLICATION(&APP->parent));
+    WINDOW = NULL;
+    APP = NULL;
     return G_SOURCE_REMOVE;
 }
 
@@ -340,7 +340,7 @@ static void gui_cmd_handler(char *fnpath) {
 DECLARE_THREAD_WRAPPER(gui_cmd_handler, {gui_cmd_handler((char *)fnpath);})
 
 int run_gui(int argc, char **argv) {
-    const char *fnpath = "gui.init";
+    const char *fnpath = "gui.main";
     LDEBUG("Initializing GUI!");
 
     LAUNCH_WRAPPED_THREAD(gui_cmd_handler);
@@ -348,8 +348,12 @@ int run_gui(int argc, char **argv) {
     LVERBOSE("Starting GTK app...");
     CrssApp *app = crss_app_new();
     int status = g_application_run(G_APPLICATION(app), argc, argv);
+    GdkDisplay *display = gdk_display_get_default();
+    if (display) {
+        gdk_display_close(display);  // flushes + destroys GL context
+    }
+    while (g_main_context_iteration(NULL, FALSE));
     g_object_unref(app);
-    WITH_GUI = 0;
     APP = NULL;
     WINDOW = NULL;
     LVERBOSE("Exited GTK app!");
