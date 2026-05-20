@@ -244,6 +244,8 @@ static bool _GUI_FORMATTED_LOG = false;
 
 static gboolean __terminate_gui_inner() {
     if (!WITH_GUI) return G_SOURCE_REMOVE;
+    WINDOW = NULL;
+    APP = NULL;
     DLDEBUG("Quitting GTK Application!");
     gtk_widget_unrealize(GTK_WIDGET(WINDOW->graph_area));
     gtk_window_close(GTK_WINDOW(WINDOW));
@@ -323,8 +325,10 @@ static void gui_cmd_handler(char *fnpath) {
             EXIT_CMD_HANDLER();
         })
         HANDLE_COMMAND("log ", {
-            char *msg = mystrdup(RECEIVED_CMD);
-            g_idle_add((GSourceFunc)gui_console_add, msg);
+            if (WINDOW) {
+                char *msg = mystrdup(RECEIVED_CMD);
+                g_idle_add((GSourceFunc)gui_console_add, msg);
+            }
         })
     })
 
@@ -346,6 +350,8 @@ int run_gui(int argc, char **argv) {
     int status = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);
     WITH_GUI = 0;
+    APP = NULL;
+    WINDOW = NULL;
     LVERBOSE("Exited GTK app!");
 
     JOIN_WRAPPED_THREAD(gui_cmd_handler);
