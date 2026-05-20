@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <threads.h>
+#include <math.h>
 
 void usleep(uint32_t usec);
 

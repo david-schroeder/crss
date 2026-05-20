@@ -130,6 +130,7 @@ Run command handler
 
 Polls broadcast socket for incoming commands in a loop.
 
+@param loop_code Compound statement to run once per loop iteration
 @param handler_code Compound statement to handle commands
 */
 #define RUN_CMD_HANDLER(loop_code, handler_code) \
@@ -147,6 +148,7 @@ Polls broadcast socket for incoming commands in a loop.
             free(__cmd_handler_cmd_data); \
             free_charlist(__cmd_handler_cmd_args); \
         } \
+        usleep(10); \
     }
 
 #define RECEIVED_CMD (__cmd_handler_cmd_data)

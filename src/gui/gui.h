@@ -3,9 +3,11 @@
 
 #include "utils.h"
 #include "internals.h"
+#include "camera.h"
 #include "../core/redsynth/graph.h"
 
-#include "gtk/gtk.h"
+#include <gtk/gtk.h>
+#include <gdk/gdk.h>
 
 struct _CrssAppWindow {
     GtkApplicationWindow parent;
@@ -15,8 +17,11 @@ struct _CrssAppWindow {
     GtkGLArea *graph_area;
 
     rs_graph_t *graph;
-    uint32_t graph_shader_program;
-    uint32_t graph_vao;
+    uint32_t node_shader_program, edge_shader_program;
+    uint32_t node_vao, edge_vao;
+    float aspect;
+    CrssCamera camera;
+    double graph_drag_x, graph_drag_y;
 };
 
 #define CRSS_APP_TYPE (crss_app_get_type())

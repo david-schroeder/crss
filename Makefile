@@ -11,6 +11,8 @@ OBJFILES    := build/rss-server.o \
 				build/logger/help.o \
 				build/gui/gui.o \
 				build/gui/resources.o \
+				build/gui/load_shader.o \
+				build/gui/camera.o \
 				build/gui/crss_gl.o \
 				build/network/crypto.o \
 				build/network/network.o \

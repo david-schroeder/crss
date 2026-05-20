@@ -2,13 +2,19 @@
 #include "crss_gl.h"
 
 /////////////////////
+//                 //
 // CRSS APP WINDOW //
+//                 //
 /////////////////////
 
 G_DEFINE_TYPE(CrssAppWindow, crss_app_window, GTK_TYPE_APPLICATION_WINDOW);
 
 // Forward declarations
 void on_graph_area_realize(GtkGLArea *area, gpointer user_data);
+void on_graph_area_resize(GtkGLArea *area, int w, int h, gpointer user_data);
+void on_graph_drag_begin(GtkGestureDrag *gesture, double x, double y, gpointer user_data);
+void on_graph_drag_update(GtkGestureDrag *gesture, double dx, double dy, gpointer user_data);
+
 void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win);
 void toggle_console_wrap(GtkCheckButton *button, CrssAppWindow *win);
 
@@ -29,6 +35,13 @@ static void crss_app_window_init(CrssAppWindow *win) {
         TRUE
     );
 
+    GtkGesture *graph_drag = gtk_gesture_drag_new();
+
+    gtk_widget_add_controller(
+        GTK_WIDGET(win->graph_area),
+        GTK_EVENT_CONTROLLER(graph_drag)
+    );
+
     /* TEST DATA */
 
     win->graph = rs_graph_new();
@@ -46,6 +59,27 @@ static void crss_app_window_init(CrssAppWindow *win) {
         win->graph_area,
         "render",
         G_CALLBACK(render_graph_area),
+        win
+    );
+
+    g_signal_connect(
+        win->graph_area,
+        "resize",
+        G_CALLBACK(on_graph_area_resize),
+        win
+    );
+
+    g_signal_connect(
+        graph_drag,
+        "drag-begin",
+        G_CALLBACK(on_graph_drag_begin),
+        win
+    );
+
+    g_signal_connect(
+        graph_drag,
+        "drag-update",
+        G_CALLBACK(on_graph_drag_update),
         win
     );
 }
@@ -69,7 +103,9 @@ CrssAppWindow *crss_app_window_new(CrssApp *app) {
 void crss_app_window_open(CrssAppWindow *win, GFile *file) {}
 
 //////////////
+//          //
 // CRSS APP //
+//          //
 //////////////
 
 struct _CrssApp {
@@ -109,7 +145,9 @@ CrssApp *crss_app_new(void) {
 }
 
 ///////////////
+//           //
 // CALLBACKS //
+//           //
 ///////////////
 
 void on_graph_area_realize(GtkGLArea *area, gpointer user_data) {
@@ -124,6 +162,34 @@ void on_graph_area_realize(GtkGLArea *area, gpointer user_data) {
     LDEBUG("GL VERSION: %s", glGetString(GL_VERSION));
     LDEBUG("GLSL VERSION: %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
     LDEBUG("RENDERER: %s", glGetString(GL_RENDERER));
+}
+
+void on_graph_area_resize(GtkGLArea *area, int w, int h, gpointer user_data) {
+    glViewport(0, 0, h, h);
+    ((CrssAppWindow*)user_data)->camera.aspect = (float)w/(float)h;
+}
+
+void on_graph_drag_begin(GtkGestureDrag *gesture, double x, double y, gpointer user_data) {
+    CrssAppWindow *win = user_data;
+    win->graph_drag_x = x;
+    win->graph_drag_y = y;
+}
+
+void on_graph_drag_update(GtkGestureDrag *gesture, double offset_x, double offset_y, gpointer user_data) {
+    CrssAppWindow *win = user_data;
+
+    double x, y, dx, dy;
+    gtk_gesture_drag_get_start_point(gesture, &x, &y);
+
+    dx = x + offset_x - win->graph_drag_x;
+    dy = y + offset_y - win->graph_drag_y;
+
+    win->graph_drag_x = x + offset_x;
+    win->graph_drag_y = y + offset_y;
+
+    camera_orbit(&win->camera, (float)dx, (float)dy);
+
+    gtk_widget_queue_draw(GTK_WIDGET(win->graph_area));
 }
 
 void issue_console_command_callback(GtkEntry *entry, CrssAppWindow *win) {
@@ -163,13 +229,17 @@ void toggle_console_wrap(GtkCheckButton *button, CrssAppWindow *win) {
 }
 
 ///////////////////
+//               //
 // CONFIGURATION //
+//               //
 ///////////////////
 
 static bool _GUI_FORMATTED_LOG = false;
 
 ////////////////////
+//                //
 // MAIN FUNCTIONS //
+//                //
 ////////////////////
 
 static gboolean __terminate_gui_inner() {

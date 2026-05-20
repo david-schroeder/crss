@@ -4,8 +4,10 @@
 #include "gtk/gtk.h"
 #include "utils.h"
 #include "gui.h"
+#include "load_shader.h"
 
 #include <epoxy/gl.h>
+#include <cglm/cglm.h>
 
 void setup_openGL(CrssAppWindow *win);
 
