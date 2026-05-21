@@ -99,6 +99,8 @@ static int32_t create_shader_program(
     return -1;
 }
 
+#define SHADER(x) ("src/gui/shaders/" x)
+
 void setup_openGL(CrssAppWindow *win) {
     GUI_PATH("graph_area_realize.setup_openGL");
 
@@ -107,10 +109,13 @@ void setup_openGL(CrssAppWindow *win) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     win->node_shader_program = create_shader_program(
-        (char*)fnpath, "src/gui/shaders/vs_node.glsl", "src/gui/shaders/fs_node.glsl"
+        (char*)fnpath, SHADER("vs_node.glsl"), SHADER("fs_node.glsl")
     );
     win->edge_shader_program = create_shader_program(
-        (char*)fnpath, "src/gui/shaders/vs_edge.glsl", "src/gui/shaders/fs_edge.glsl"
+        (char*)fnpath, SHADER("vs_edge.glsl"), SHADER("fs_edge.glsl")
+    );
+    win->grid_shader_program = create_shader_program(
+        (char*)fnpath, SHADER("vs_flat.glsl"), SHADER("fs_grid.glsl")
     );
 
     /* Nodes */
@@ -197,6 +202,30 @@ void setup_openGL(CrssAppWindow *win) {
 
     win->edge_vao = edgeQuadVAO;
 
+    /* Grid */
+    float half_grid_size = 8192.0f;
+    float gridQuad[] = {
+        -half_grid_size, 0.0f, -half_grid_size,
+         half_grid_size, 0.0f, -half_grid_size,
+        -half_grid_size, 0.0f,  half_grid_size,
+         half_grid_size, 0.0f,  half_grid_size,
+    };
+
+    uint32_t gridVAO, gridVBO;
+    glGenBuffers(1, &gridVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, gridVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(gridQuad), gridQuad, GL_STATIC_DRAW);
+
+    glGenVertexArrays(1, &gridVAO);
+    glBindVertexArray(gridVAO);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    win->grid_vao = gridVAO;
+
     // Setup camera
     init_camera(&win->camera);
 }
@@ -209,7 +238,7 @@ gboolean render_graph_area(GtkGLArea *area, GdkGLContext *ctx, gpointer user_dat
 
     rs_graph_t *graph = win->graph;
 
-    glClearColor(0.1, 0.1, 0.1, 1);
+    glClearColor(0.0, 0.0, 0.0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Camera matrices
@@ -217,13 +246,31 @@ gboolean render_graph_area(GtkGLArea *area, GdkGLContext *ctx, gpointer user_dat
     get_view_matrix(&win->camera, view);
     get_projection_matrix(&win->camera, proj);
 
-    int viewMatLocation = glGetUniformLocation(win->node_shader_program, "view");
-    int projMatLocation = glGetUniformLocation(win->node_shader_program, "projection");
-
     /* Draw */
+
+    int viewMatLocation, projMatLocation;
+
+    /* Grid */
+    glUseProgram(win->grid_shader_program);
+
+    // Shader uniform setup
+    viewMatLocation = glGetUniformLocation(win->grid_shader_program, "uView");
+    projMatLocation = glGetUniformLocation(win->grid_shader_program, "uProjection");
+    int cameraPosLoc = glGetUniformLocation(win->grid_shader_program, "uCameraPos");
+    vec3 cameraPos;
+    get_camera_pos(&win->camera, cameraPos);
+
+    glUniformMatrix4fv(viewMatLocation, 1, GL_FALSE, (float*)view);
+    glUniformMatrix4fv(projMatLocation, 1, GL_FALSE, (float*)proj);
+    glUniform3fv(cameraPosLoc, 1, (float*)cameraPos);
+    glBindVertexArray(win->grid_vao);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 6);
+    glBindVertexArray(0);
 
     /* Nodes */
     glUseProgram(win->node_shader_program);
+    viewMatLocation = glGetUniformLocation(win->node_shader_program, "uView");
+    projMatLocation = glGetUniformLocation(win->node_shader_program, "uProjection");
     glUniformMatrix4fv(viewMatLocation, 1, GL_FALSE, (float*)view);
     glUniformMatrix4fv(projMatLocation, 1, GL_FALSE, (float*)proj);
     glBindVertexArray(win->node_vao);
@@ -232,6 +279,8 @@ gboolean render_graph_area(GtkGLArea *area, GdkGLContext *ctx, gpointer user_dat
 
     /* Edges */
     glUseProgram(win->edge_shader_program);
+    viewMatLocation = glGetUniformLocation(win->edge_shader_program, "uView");
+    projMatLocation = glGetUniformLocation(win->edge_shader_program, "uProjection");
     glUniformMatrix4fv(viewMatLocation, 1, GL_FALSE, (float*)view);
     glUniformMatrix4fv(projMatLocation, 1, GL_FALSE, (float*)proj);
     glBindVertexArray(win->edge_vao);

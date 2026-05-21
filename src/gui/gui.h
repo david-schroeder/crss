@@ -16,9 +16,15 @@ struct _CrssAppWindow {
     GtkGLArea *graph_area;
 
     rs_graph_t *graph;
-    uint32_t node_shader_program, edge_shader_program;
-    uint32_t node_vao, edge_vao;
-    float aspect;
+
+    // OpenGL identifiers
+    uint32_t node_shader_program;
+    uint32_t edge_shader_program;
+    uint32_t grid_shader_program;
+    uint32_t node_vao;
+    uint32_t edge_vao;
+    uint32_t grid_vao;
+
     CrssCamera camera;
     double graph_drag_x, graph_drag_y;
 };

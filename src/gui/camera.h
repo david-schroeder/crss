@@ -19,6 +19,8 @@ typedef struct {
 
 void init_camera(CrssCamera *cam);
 
+void get_camera_pos(CrssCamera *cam, vec3 tgt);
+
 void get_camera_pos_and_target(CrssCamera *cam, vec3 pos, vec3 tgt);
 
 void get_view_matrix(CrssCamera *cam, mat4 dest);

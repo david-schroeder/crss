@@ -14,6 +14,12 @@ void init_camera(CrssCamera *cam) {
     cam->sensitivity = 0.2;
 }
 
+void get_camera_pos(CrssCamera *cam, vec3 tgt) {
+    tgt[0] = (float)cam->tx;
+    tgt[1] = (float)cam->ty;
+    tgt[2] = (float)cam->tz;
+}
+
 void get_camera_pos_and_target(CrssCamera *cam, vec3 pos, vec3 tgt) {
     float cos_elev = cosf(glm_rad(cam->elevation));
     float sin_elev = sinf(glm_rad(cam->elevation));

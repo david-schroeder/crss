@@ -1,5 +1,8 @@
-CFLAGS		:= -std=c23 -Wall -Wno-unused-command-line-argument -fsanitize=address,undefined -fno-omit-frame-pointer -fno-strict-aliasing -g -O0 -D DEBUG -Ilib -lpthread -lm `pkg-config gtk4 libzmq epoxy openssl libcurl --cflags --libs`
-CC			:= clang
+CFLAGS		:= -std=c2x -Wall -fno-strict-aliasing -g -O0 -D DEBUG -Ilib \
+				`pkg-config gtk4 libzmq epoxy openssl libcurl --cflags`
+LDFLAGS     := -lpthread -lm \
+				`pkg-config gtk4 libzmq epoxy openssl libcurl --libs`
+CC			:= gcc
 OBJFILES    := build/rss-server.o \
 				build/version.o \
 				build/utils.o \
@@ -32,7 +35,7 @@ VERSION     := v1.0-snapshot-0 # must be accordingly updated
 NAME        := rss-server-$(VERSION)
 
 run: $(OBJFILES) | build
-	$(CC) $(CFLAGS) -o build/$(NAME) $^
+	$(CC) $(CFLAGS) -o build/$(NAME) $^ $(LDFLAGS)
 	./build/$(NAME) -d verbose
 
 build:
